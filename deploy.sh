@@ -58,12 +58,12 @@ EOF
 # --------------------------------------------------------------------------------------
 function shell_env() {
     # create openstackrc for 'admin' user
-    echo 'export SERVICE_TOKEN=admin' >> ~/openstackrc
-    echo 'export OS_TENANT_NAME=admin' >> ~/openstackrc
-    echo 'export OS_USERNAME=admin' >> ~/openstackrc
-    echo 'export OS_PASSWORD=admin' >> ~/openstackrc
-    echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc
-    echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc
+#    echo 'export SERVICE_TOKEN=admin' >> ~/openstackrc
+#    echo 'export OS_TENANT_NAME=admin' >> ~/openstackrc
+#    echo 'export OS_USERNAME=admin' >> ~/openstackrc
+#    echo 'export OS_PASSWORD=admin' >> ~/openstackrc
+#    echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc
+#    echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc
     # set ENVs, now use this user 'admin' for installation.
 #    export SERVICE_TOKEN=admin
 #    export OS_TENANT_NAME=admin
@@ -78,13 +78,19 @@ function shell_env() {
     export SERVICE_TOKEN=${SERVICE_TOKEN}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
     export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
-    SERVICE_TENANT_NAME=${SERVICE_TENANT_NAME}
+
+    echo "export OS_TENANT_NAME=${OS_TENANT_NAME}" >> ~/openstackrc
+    echo "export OS_USERNAME=${OS_USERNAME}" >> ~/openstackrc
+    echo "export OS_PASSWORD=${OS_PASSWORD}" >> ~/openstackrc
+    echo "export SERVICE_TOKEN=${SERVICE_TOKEN}" >> ~/openstackrc
+    echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc
+    echo "export SERVICE_ENDPOINT=\"http://${KEYSTONE_IP}:35357/v2.0\"" >> ~/openstackrc
 
     # create openstackrc for 'demo' user. this user is useful for horizon.
-    echo 'export SERVICE_TOKEN=admin' >> ~/openstackrc-demo
-    echo 'export OS_TENANT_NAME=service' >> ~/openstackrc-demo
-    echo 'export OS_USERNAME=demo' >> ~/openstackrc-demo
-    echo 'export OS_PASSWORD=demo' >> ~/openstackrc-demo
+    echo "export SERVICE_TOKEN=admin" >> ~/openstackrc-demo
+    echo "export OS_TENANT_NAME=service" >> ~/openstackrc-demo
+    echo "export OS_USERNAME=demo" >> ~/openstackrc-demo
+    echo "export OS_PASSWORD=demo" >> ~/openstackrc-demo
     echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc-demo
     echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc-demo
 }
@@ -242,7 +248,8 @@ function os_add () {
         mv ./os.img ./os.img.bk
     fi
     wget ${OS_IMAGE_URL} -O ./os.img
-    glance add name="${OS_IMAGE_NAME}" is_public=true container_format=ovf disk_format=qcow2 < ./os.img
+    #glance add name="${OS_IMAGE_NAME}" is_public=true container_format=ovf disk_format=qcow2 < ./os.img
+    glance image-create --name="${OS_IMAGE_NAME}" --is-public true --container-format bare --disk-format qcow2 < ./os.img
 }
 
 # --------------------------------------------------------------------------------------
@@ -268,12 +275,12 @@ function allinone_quantum_setup() {
 
     # create database for quantum
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE quantum;"
-    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO '<DB_QUANTUM_USER>'@'%' IDENTIFIED BY '<DB_QUANTUM_PASS>';"
+    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO '${DB_QUANTUM_USER}'@'%' IDENTIFIED BY '${DB_QUANTUM_PASS}';"
     
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.quantum/metadata_agent.ini > /etc/quantum/metadata_agent.ini
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_NODE_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" $BASE_DIR/conf/etc.quantum/l3_agent.ini > /etc/quantum/l3_agent.ini
-    sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
 
     # set configuration files for quantum
 #    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
@@ -466,6 +473,7 @@ function compute_nova_setup_nova-network() {
 # --------------------------------------------------------------------------------------
 function allinone_nova_setup() {
     install_package kvm libvirt-bin pm-utils
+    restart_service dbus
     virsh net-destroy default
     virsh net-undefine default
     restart_service libvirt-bin
@@ -475,7 +483,7 @@ function allinone_nova_setup() {
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
     
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<CONTROLLER_IP>${HOST_IP}#" -e "s#<CONTROLLER_PUB_IP>${HOST_PUB_IP}#" -e "s#<DB_IP>${DB_IP}#" -e "s#<DB_NOVA_USER>${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>${DB_NOVA_PASS}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    sed -e "s#<CONTROLLER_IP>#${HOST_IP}#" -e "s#<CONTROLLER_PUB_IP>#${HOST_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
     
     nova-manage db sync
