@@ -1,0 +1,7 @@
+usage) % sudo ./deploy.sh <node_type> <network_type>
+
+  <node_type>    : allinone|controller|network|compute|create_network
+  <network_type> : nova-network|quantum
+
+example) % sudo ./deploy.sh allinone nova-network
+
