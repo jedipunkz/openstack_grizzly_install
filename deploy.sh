@@ -46,7 +46,7 @@ fudge 127.127.1.0 stratum 10
 EOF
 
     # install misc software
-    apt-get install -y vlan bridge-utils
+    apt-get install -y vlan bridge-utils rabbitmq-server
 
     # enable router
     sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
@@ -77,22 +77,43 @@ function shell_env() {
     export OS_PASSWORD=${OS_PASSWORD}
     export SERVICE_TOKEN=${SERVICE_TOKEN}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
+    if [[ "$1" = "allinone" ]]; then
+        export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
+    elif [[ "$1" = "separate" ]]; then
+        export SERVICE_ENDPOINT="http://${KEYSTONE_PUB_IP}:35357/v2.0"
+    else
+        echo "mode must be allinone or separate."
+        exit 1
+    fi
 
     echo "export OS_TENANT_NAME=${OS_TENANT_NAME}" >> ~/openstackrc
     echo "export OS_USERNAME=${OS_USERNAME}" >> ~/openstackrc
     echo "export OS_PASSWORD=${OS_PASSWORD}" >> ~/openstackrc
     echo "export SERVICE_TOKEN=${SERVICE_TOKEN}" >> ~/openstackrc
     echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc
-    echo "export SERVICE_ENDPOINT=\"http://${KEYSTONE_IP}:35357/v2.0\"" >> ~/openstackrc
+    if [[ "$1" = "allinone" ]]; then
+        echo "export SERVICE_ENDPOINT=\"http://${KEYSTONE_IP}:35357/v2.0\"" >> ~/openstackrc
+    elif [[ "$1" = "separate" ]]; then
+        echo "export SERVICE_ENDPOINT=\"http://${KEYSTONE_PUB_IP}:35357/v2.0\"" >> ~/openstackrc
+    else
+        echo "mode must be allinone or separate."
+        exit 1
+    fi
 
     # create openstackrc for 'demo' user. this user is useful for horizon.
-    echo "export SERVICE_TOKEN=admin" >> ~/openstackrc-demo
     echo "export OS_TENANT_NAME=service" >> ~/openstackrc-demo
-    echo "export OS_USERNAME=demo" >> ~/openstackrc-demo
-    echo "export OS_PASSWORD=demo" >> ~/openstackrc-demo
+    echo "export OS_USERNAME=${DEMO_USER}" >> ~/openstackrc-demo
+    echo "export OS_PASSWORD=${DEMO_PASS}" >> ~/openstackrc-demo
+    echo "export SERVICE_TOKEN=${SERVICE_TOKEN}" >> ~/openstackrc-demo
     echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc-demo
-    echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc-demo
+    if [[ "$1" = "allinone" ]]; then
+        echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc-demo
+    elif [[ "$1" = "separate" ]]; then
+        echo "export SERVICE_ENDPOINT=http://${KEYSTONE_PUB_IP}:35357/v2.0" >> ~/openstackrc-demo
+    else
+        echo "mode must be allinone or separate."
+        exit 1
+    fi
 }
 
 # --------------------------------------------------------------------------------------
@@ -128,7 +149,7 @@ function keystone_setup() {
     USER_ID_NOVA=$(keystone user-create --name nova --pass ${SERVICE_PASSWORD} --tenant-id ${TENANT_ID_SERVICE} --email admin@example.com | grep ' id ' | get_field 2)
     USER_ID_GLANCE=$(keystone user-create --name glance --pass ${SERVICE_PASSWORD} --tenant-id ${TENANT_ID_SERVICE} --email admin@example.com | grep ' id ' | get_field 2)
     USER_ID_CINDER=$(keystone user-create --name cinder --pass ${SERVICE_PASSWORD} --tenant-id ${TENANT_ID_SERVICE} --email admin@example.com | grep ' id ' | get_field 2)
-    USER_ID_DEMO=$(keystone user-create --name demo --pass ${SERVICE_PASSWORD} --tenant-id ${TENANT_ID_SERVICE} --email demo@example.com | grep ' id ' | get_field 2)
+    USER_ID_DEMO=$(keystone user-create --name ${DEMO_USER} --pass ${DEMO_PASSWORD} --tenant-id ${TENANT_ID_SERVICE} --email demo@example.com | grep ' id ' | get_field 2)
     if [[ "$1" = "quantum" ]]; then
         USER_ID_QUANTUM=$(keystone user-create --name quantum --pass quantum --tenant-id ${TENANT_ID_SERVICE} --email admin@example.com | grep ' id ' | get_field 2)
     fi
@@ -361,7 +382,7 @@ function network_quantum_setup() {
 function create_network() {
     # create internal network
     TENANT_ID=$(keystone tenant-list | grep " service " | get_field 1)
-    INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net | grep ' id ' | get_field 2)
+    INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net | grep ' id ' | get_field 1)
     INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
     quantum subnet-update ${INT_SUBNET_ID} list=true --dns_nameservers 8.8.8.8 8.8.4.4
     INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-demo | grep ' id ' | get_field 2)
@@ -474,6 +495,7 @@ function compute_nova_setup_nova-network() {
 function allinone_nova_setup() {
     install_package kvm libvirt-bin pm-utils
     restart_service dbus
+    sleep 3
     virsh net-destroy default
     virsh net-undefine default
     restart_service libvirt-bin
@@ -599,23 +621,37 @@ function horizon_setup() {
 # --------------------------------------------------------------------------------------
 function scgroup_allow() {
     # turn on demo user
-    export SERVICE_TOKEN=admin
+    export SERVICE_TOKEN=${SERVICE_TOKEN}
     export OS_TENANT_NAME=service
-    export OS_USERNAME=demo
-    export OS_PASSWORD=demo
+    export OS_USERNAME=${DEMO_USER}
+    export OS_PASSWORD=${DEMO_PASSWORD}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
+    if [[ "$1" = "allinone" ]]; then
+        export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
+    elif [[ "$1" = "controller" ]]; then
+        export SERVICE_ENDPOINT="http://${KEYSTONE_PUB_IP}:35357/v2.0"
+    else
+        echo "Mode must be allinone or controller."
+        exit 1
+    fi
 
     nova --no-cache secgroup-add-rule default tcp 22 22 0.0.0.0/0
     nova --no-cache secgroup-add-rule default icmp -1 -1 0.0.0.0/0
 
     # turn back to admin user
-    export SERVICE_TOKEN=admin
-    export OS_TENANT_NAME=admin
-    export OS_USERNAME=admin
-    export OS_PASSWORD=admin
+    export SERVICE_TOKEN=${SERVICE_TOKEN}
+    export OS_TENANT_NAME=${OS_TENANT_NAME}
+    export OS_USERNAME=${OS_USERNAME}
+    export OS_PASSWORD=${OS_PASSWORD}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
+    if [[ "$1" = "allinone" ]]; then
+        export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
+    elif [[ "$1" = "controller" ]]; then
+        export SERVICE_ENDPOINT="http://${KEYSTONE_PUB_IP}:35357/v2.0"
+    else
+        echo "Mode must be allinone or controller."
+        exit 1
+    fi
 }
 
 # --------------------------------------------------------------------------------------
@@ -632,7 +668,7 @@ if [[ "$2" = "nova-network" ]]; then
             QUANTUM_IP=${HOST_IP};  check_para ${QUANTUM_IP}
             RABBIT_IP=${HOST_IP};   check_para ${RABBIT_IP}
             check_env 
-            shell_env
+            shell_env allinone
             init
             mysql_setup
             keystone_setup nova-network
@@ -641,8 +677,8 @@ if [[ "$2" = "nova-network" ]]; then
             controller_nova_setup_nova-network
             cinder_setup
             horizon_setup
-            scgroup_allow
             create_network_nova-network
+            scgroup_allow allinone
             echo "Setup for all in one node has done.:D"
             ;;
         controller)
@@ -654,7 +690,7 @@ if [[ "$2" = "nova-network" ]]; then
             QUANTUM_IP=${CONTROLLER_NODE_IP};  check_para ${QUANTUM_IP}
             RABBIT_IP=${CONTROLLER_NODE_IP};   check_para ${RABBIT_IP}
             check_env 
-            shell_env
+            shell_env separate
             init
             mysql_setup
             keystone_setup nova-network
@@ -663,7 +699,7 @@ if [[ "$2" = "nova-network" ]]; then
             controller_nova_setup_nova-network
             cinder_setup
             horizon_setup
-            scgroup_allow
+            scgroup_allow controller
             echo "Setup for controller node has done.:D"
             ;;
         compute)
@@ -675,7 +711,7 @@ if [[ "$2" = "nova-network" ]]; then
             QUANTUM_IP=${CONTROLLER_NODE_IP};  check_para ${QUANTUM_IP}
             RABBIT_IP=${CONTROLLER_NODE_IP};   check_para ${RABBIT_IP}
             check_env 
-            shell_env
+            shell_env separate
             init
             compute_nova_setup_nova-network
             create_network_nova-network
@@ -721,7 +757,7 @@ elif [[ "$2" = "quantum" ]]; then
             CONTROLLER_NODE_PUB_IP=${HOST_PUB_IP};  check_para ${CONTROLLER_NODE_PUB_IP}
             KEYSTONE_PUB_IP=${HOST_PUB_IP};         check_para ${KEYSTONE_PUB_IP}
             check_env 
-            shell_env
+            shell_env allinone
             init
             mysql_setup
             keystone_setup quantum
@@ -732,8 +768,8 @@ elif [[ "$2" = "quantum" ]]; then
             allinone_nova_setup
             cinder_setup
             horizon_setup
-            scgroup_allow
             create_network
+            scgroup_allow allinone
             echo "Setup for all in one node has done.:D"
             ;;
         controller)
@@ -746,7 +782,7 @@ elif [[ "$2" = "quantum" ]]; then
             RABBIT_IP=${CONTROLLER_NODE_IP};            check_para ${RABBIT_IP}
             KEYSTONE_PUB_IP=${CONTROLLER_NODE_PUB_IP};  check_para ${KEYSTONE_PUB_IP}
             check_env 
-            shell_env
+            shell_env separate
             init
             mysql_setup
             keystone_setup quantum controller
@@ -756,7 +792,7 @@ elif [[ "$2" = "quantum" ]]; then
             controller_nova_setup
             cinder_setup
             horizon_setup
-            scgroup_allow
+            scgroup_allow controller
             echo "Setup for controller node has done.:D"
             ;;
         network)
@@ -768,7 +804,7 @@ elif [[ "$2" = "quantum" ]]; then
             QUANTUM_IP=${CONTROLLER_NODE_IP};  check_para ${QUANTUM_IP}
             RABBIT_IP=${CONTROLLER_NODE_IP};   check_para ${RABBIT_IP}
             check_env 
-            shell_env
+            shell_env separate
             init
             openvswitch_setup
             network_quantum_setup
@@ -784,7 +820,7 @@ elif [[ "$2" = "quantum" ]]; then
             QUANTUM_IP=${CONTROLLER_NODE_IP};  check_para ${QUANTUM_IP}
             RABBIT_IP=${CONTROLLER_NODE_IP};   check_para ${RABBIT_IP}
             check_env
-            shell_env
+            shell_env separate
             init
             compute_nova_setup
             echo "Setup for compute node has done.:D"
