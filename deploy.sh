@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 #
-# OpenStack Folsom Install Script
+# OpenStack Grizzly Install Script
 #
 # allright reserved by Tomokazu Hirai @jedipunkz
-#
-# This is a script for installation of OpenStack Folsom. You can choose nova-network or
-# quantum. and you can execute this script on Ubuntu 12.04 or 12.10. Please README.md for
-# more details.
 #
 # --------------------------------------------------------------------------------------
 # Usage : sudo ./deploy.sh <node_type> <network_type>
@@ -37,41 +33,27 @@ fi
 # initialize
 # --------------------------------------------------------------------------------------
 function init() {
+    # at first, update package repository cache
     apt-get update
+
+    # install ntp
     install_package ntp
-    cat <<EOF >/etc/ntp.conf
-server ntp.ubuntu.com
-server 127.127.1.0
-fudge 127.127.1.0 stratum 10
-EOF
+    cp $BASE_DIR/conf/etc.ntp.conf /etc/ntp.conf
 
     # install misc software
     apt-get install -y vlan bridge-utils rabbitmq-server
 
     # enable router
-    sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
-    sysctl -p
+    #sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
+    #sysctl -p
 }
 
 # --------------------------------------------------------------------------------------
 # set shell environment
 # --------------------------------------------------------------------------------------
 function shell_env() {
-    # create openstackrc for 'admin' user
-#    echo 'export SERVICE_TOKEN=admin' >> ~/openstackrc
-#    echo 'export OS_TENANT_NAME=admin' >> ~/openstackrc
-#    echo 'export OS_USERNAME=admin' >> ~/openstackrc
-#    echo 'export OS_PASSWORD=admin' >> ~/openstackrc
-#    echo "export OS_AUTH_URL=\"http://${KEYSTONE_IP}:5000/v2.0/\"" >> ~/openstackrc
-#    echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc
-    # set ENVs, now use this user 'admin' for installation.
-#    export SERVICE_TOKEN=admin
-#    export OS_TENANT_NAME=admin
-#    export OS_USERNAME=admin
-#    export OS_PASSWORD=admin
-#    export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-#    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
 
+    # set environments for 'admin' user, this script will be operated with this user
     export OS_TENANT_NAME=${OS_TENANT_NAME}
     export OS_USERNAME=${OS_USERNAME}
     export OS_PASSWORD=${OS_PASSWORD}
@@ -86,6 +68,7 @@ function shell_env() {
         exit 1
     fi
 
+    # create ~/openstackrc for 'admin' user
     echo "export OS_TENANT_NAME=${OS_TENANT_NAME}" >> ~/openstackrc
     echo "export OS_USERNAME=${OS_USERNAME}" >> ~/openstackrc
     echo "export OS_PASSWORD=${OS_PASSWORD}" >> ~/openstackrc
@@ -120,9 +103,13 @@ function shell_env() {
 # install mysql
 # --------------------------------------------------------------------------------------
 function mysql_setup() {
+    # set MySQL root user's password
     echo mysql-server-5.5 mysql-server/root_password password ${MYSQL_PASS} | debconf-set-selections
     echo mysql-server-5.5 mysql-server/root_password_again password ${MYSQL_PASS} | debconf-set-selections
+    # install mysql
     install_package mysql-server python-mysqldb
+
+    # enable to access to mysql via network
     sed -i -e 's/127.0.0.1/0.0.0.0/' /etc/mysql/my.cnf
     restart_service mysql
 }
@@ -131,8 +118,10 @@ function mysql_setup() {
 # install keystone
 # --------------------------------------------------------------------------------------
 function keystone_setup() {
+    # install keystone daemon and client software
     install_package keystone python-keystone python-keystoneclient
 
+    # create database for keystone
     mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE keystone;"
     mysql -uroot -p${MYSQL_PASS} -e "GRANT ALL ON keystone.* TO '${DB_KEYSTONE_USER}'@'%' IDENTIFIED BY '${DB_KEYSTONE_PASS}';"
 
