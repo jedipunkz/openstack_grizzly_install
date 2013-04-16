@@ -1,31 +1,14 @@
 # --------------------------------------------------------------------------------------
-# check environment
-# --------------------------------------------------------------------------------------
-function check_env() {
-    if [[ -x $(which lsb_release 2>/dev/null) ]]; then
-        CODENAME=$(lsb_release -c -s)
-        if [[ $CODENAME != "precise" ]]; then
-            echo "This code was tested on precise only."
-            exit 1
-        fi
-    else
-        echo "You can run this code on Ubuntu OS only."
-        exit 1
-    fi
-    export CODENAME
-}
-
-# --------------------------------------------------------------------------------------
 # check os vendor
 # --------------------------------------------------------------------------------------
 function check_os() {
     VENDOR=$(lsb_release -i -s)
-    export VENDER
+    echo $VENDER
 }
 
 function check_codename() {
-    VENDOR=$(lsb_release -c -s)
-    export CODENAME
+    CODENAME=$(lsb_release -c -s)
+    echo $CODENAME
 }
 
 # --------------------------------------------------------------------------------------
