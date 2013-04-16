@@ -46,6 +46,11 @@ function init() {
     # enable router
     #sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/' /etc/sysctl.conf
     #sysctl -p
+
+    # use Ubuntu Cloud Archive repository
+    apt-get install ubuntu-cloud-keyring
+    echo deb http://ubuntu-cloud.archive.canonical.com/ubuntu precise-updates/grizzly main >> /etc/apt/sources.list.d/grizzly.list
+    apt-get update
 }
 
 # --------------------------------------------------------------------------------------
@@ -59,17 +64,10 @@ function shell_env() {
     export OS_PASSWORD=${OS_PASSWORD}
     export SERVICE_TOKEN=${SERVICE_TOKEN}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-    if [[ "$1" = "allinone" ]]; then
-        export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
-    elif [[ "$1" = "separate" ]]; then
-        export SERVICE_ENDPOINT="http://${KEYSTONE_PUB_IP}:35357/v2.0"
-    else
-        echo "mode must be allinone or separate."
-        exit 1
-    fi
+    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
 
     # create ~/openstackrc for 'admin' user
-    echo "export OS_TENANT_NAME=${OS_TENANT_NAME}" >> ~/openstackrc
+    echo "export OS_TENANT_NAME=${OS_TENANT_NAME}" > ~/openstackrc
     echo "export OS_USERNAME=${OS_USERNAME}" >> ~/openstackrc
     echo "export OS_PASSWORD=${OS_PASSWORD}" >> ~/openstackrc
     echo "export SERVICE_TOKEN=${SERVICE_TOKEN}" >> ~/openstackrc
@@ -77,14 +75,14 @@ function shell_env() {
     if [[ "$1" = "allinone" ]]; then
         echo "export SERVICE_ENDPOINT=\"http://${KEYSTONE_IP}:35357/v2.0\"" >> ~/openstackrc
     elif [[ "$1" = "separate" ]]; then
-        echo "export SERVICE_ENDPOINT=\"http://${KEYSTONE_PUB_IP}:35357/v2.0\"" >> ~/openstackrc
+        echo "export SERVICE_ENDPOINT=\"http://${CONTROLLER_NODE_PUB_IP}:35357/v2.0\"" >> ~/openstackrc
     else
         echo "mode must be allinone or separate."
         exit 1
     fi
 
     # create openstackrc for 'demo' user. this user is useful for horizon.
-    echo "export OS_TENANT_NAME=service" >> ~/openstackrc-demo
+    echo "export OS_TENANT_NAME=service" > ~/openstackrc-demo
     echo "export OS_USERNAME=${DEMO_USER}" >> ~/openstackrc-demo
     echo "export OS_PASSWORD=${DEMO_PASSWORD}" >> ~/openstackrc-demo
     echo "export SERVICE_TOKEN=${SERVICE_TOKEN}" >> ~/openstackrc-demo
@@ -92,7 +90,7 @@ function shell_env() {
     if [[ "$1" = "allinone" ]]; then
         echo "export SERVICE_ENDPOINT=http://${KEYSTONE_IP}:35357/v2.0" >> ~/openstackrc-demo
     elif [[ "$1" = "separate" ]]; then
-        echo "export SERVICE_ENDPOINT=http://${KEYSTONE_PUB_IP}:35357/v2.0" >> ~/openstackrc-demo
+        echo "export SERVICE_ENDPOINT=http://${CONTROLLER_NODE_PUB_IP}:35357/v2.0" >> ~/openstackrc-demo
     else
         echo "mode must be allinone or separate."
         exit 1
@@ -280,7 +278,6 @@ function openvswitch_setup() {
 # --------------------------------------------------------------------------------------
 function allinone_quantum_setup() {
     # install packages
-    #install_package quantum-server python-cliff python-pyparsing quantum-plugin-openvswitch quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent
     install_package quantum-server quantum-plugin-openvswitch quantum-plugin-openvswitch-agent dnsmasq quantum-dhcp-agent quantum-l3-agent
 
     # create database for quantum
@@ -293,19 +290,6 @@ function allinone_quantum_setup() {
 
     sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${QUANUTM_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
 
-    # set configuration files for quantum
-#    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
-#    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_NODE_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" $BASE_DIR/conf/etc.quantum/l3_agent.ini > /etc/quantum/l3_agent.ini
-#    sed -e "s#<RABBIT_IP>#${RABBIT_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
-#    if [[ "$NETWORK_TYPE" = "gre" ]]; then
-#        sed -e "s#<QUANTUM_IP>#${QUANTUM_IP}#" -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-#    elif [[ "$NETWORK_TYPE" = "vlan" ]]; then
-#        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-#    else
-#        echo "<network_type> must be 'gre' or 'vlan'."
-#        exit 1
-#    fi
-    
     # restart processes
     restart_service quantum-server
     restart_service quantum-plugin-openvswitch-agent
@@ -322,17 +306,9 @@ function controller_quantum_setup() {
     # create database for quantum
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE quantum;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO 'quantumUser'@'%' IDENTIFIED BY 'quantumPass';"
-    
-    # set configuration files for quantum
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
-    if [[ "$NETWORK_TYPE" = "gre" ]]; then
-        sed -e "s#<QUANTUM_IP>#${CONTROLLER_NODE_IP}#" -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-    elif [[ "$NETWORK_TYPE" = "vlan" ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-    else
-        echo "<network_type> must be 'gre' or 'vlan'."
-        exit 1
-    fi
+
+    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${QUANUTM_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.controller > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
     
     # restart process
     restart_service quantum-server
@@ -344,26 +320,16 @@ function controller_quantum_setup() {
 function network_quantum_setup() {
     # install packages
     install_package mysql-client
-    install_package quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent vlan bridge-utils
+    install_package quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent quantum-metadata-agent
     
-    # set configuration files for quantum
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_NODE_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" $BASE_DIR/conf/etc.quantum/l3_agent.ini > /etc/quantum/l3_agent.ini
-    sed -e "s#<RABBIT_IP>#${RABBIT_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/metadata_agent.ini > /etc/quantum/metadata_agent.ini
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_NODE_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/l3_agent.ini > /etc/quantum/l3_agent.ini
+    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${NETWORK_NODE_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
 
-    if [[ "$NETWORK_TYPE" = "gre" ]]; then
-        sed -e "s#<QUANTUM_IP>#${NETWORK_NODE_IP}#" -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-    elif [[ "$NETWORK_TYPE" = "vlan" ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-    else
-        echo "<network_type> must be 'gre' or 'vlan'."
-        exit 1
-    fi
-    
     # restart processes
-    restart_service quantum-plugin-openvswitch-agent
-    restart_service quantum-dhcp-agent
-    restart_service quantum-l3-agent
+    cd /etc/init.d/; for i in $( ls quantum-* ); do sudo service $i restart; done
 }
 
 # --------------------------------------------------------------------------------------
@@ -383,36 +349,6 @@ function create_network() {
     EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)
     quantum subnet-create --tenant-id ${TENANT_ID} --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
     quantum router-gateway-set ${INT_ROUTER_ID} ${EXT_NET_ID}
-
-#    if [[ "$NETWORK_TYPE" = "gre" ]]; then
-#        # create internal network
-#        TENANT_ID=$(keystone tenant-list | grep " service " | get_field 1)
-#        INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net | grep ' id ' | get_field 2)
-#        INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
-#        quantum subnet-update ${INT_SUBNET_ID} list=true --dns_nameservers 8.8.8.8 8.8.4.4
-#        INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-admin | grep ' id ' | get_field 2)
-#        quantum router-interface-add ${INT_ROUTER_ID} ${INT_SUBNET_ID}
-#        # create external network
-#        EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)
-#        quantum subnet-create --tenant-id ${TENANT_ID} --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
-#        quantum router-gateway-set ${INT_ROUTER_ID} ${EXT_NET_ID}
-#    elif [[ "$NETWORK_TYPE" = "vlan" ]]; then
-#        # create internal network
-#        TENANT_ID=$(keystone tenant-list | grep " service " | get_field 1)
-#        INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net --provider:network_type vlan --provider:physical_network physnet1 --provider:segmentation_id 1024| grep ' id ' | get_field 2)
-#        INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
-#        quantum subnet-update ${INT_SUBNET_ID} list=true --dns_nameservers 8.8.8.8 8.8.4.4
-#        INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-admin | grep ' id ' | get_field 2)
-#        quantum router-interface-add ${INT_ROUTER_ID} ${INT_SUBNET_ID}
-#        # create external network
-#        EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)
-#        quantum subnet-create --tenant-id ${TENANT_ID} --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
-#        quantum router-gateway-set ${INT_ROUTER_ID} ${EXT_NET_ID}
-#    else
-#        echo "network type : gre, vlan"
-#        echo "no such parameter of network type"
-#        exit 1
-#    fi
 }
 
 # --------------------------------------------------------------------------------------
@@ -429,25 +365,18 @@ function create_network_nova-network() {
 # install nova for controller node with nova-network
 # --------------------------------------------------------------------------------------
 function controller_nova_setup_nova-network() {
-    # install dependency packages
-    install_package kvm libvirt-bin pm-utils
-    # erase dusts
-    virsh net-destroy default
-    virsh net-undefine default
-    restart_service libvirt-bin
-    
     # install nova packages
-    install_package nova-api nova-cert nova-common novnc nova-compute-kvm nova-consoleauth nova-scheduler nova-novncproxy rabbitmq-server vlan bridge-utils nova-network nova-console websockify novnc
+    install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor
+    #install_package nova-api nova-cert nova-common novnc nova-compute-kvm nova-consoleauth nova-scheduler nova-novncproxy rabbitmq-server vlan bridge-utils nova-network nova-console websockify novnc
+
     # create database for nova
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO 'novaUser'@'%' IDENTIFIED BY 'novaPass';"
     
-    # deploy configuration for nova
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<NOVA_IP>#${NOVA_IP}#" -e "s#<GLANCE_IP>#${GLANCE_IP}#" -e "s#<QUANTUM_IP>#${QUANTUM_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<COMPUTE_NODE_IP>#127.0.0.1#" -e "s#<FIXED_RANGE>#${FIXED_RANGE}#" -e "s#<FIXED_START_ADDR>#${FIXED_START_ADDR}#" -e "s#<NETWORK_SIZE>#${NETWORK_SIZE}#" $BASE_DIR/conf/etc.nova/nova.conf.nova-network > /etc/nova/nova.conf
-    
-    chown -R nova. /etc/nova
-    chmod 644 /etc/nova/nova.conf
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
+    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_IP}#" -e "s#<VNC_IP>#${CONTROLLER_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+
+    # synchronize database for nova
     nova-manage db sync
 
     # restart all services of nova
@@ -462,7 +391,7 @@ function compute_nova_setup_nova-network() {
     # install packages
     install_package nova-compute nova-network nova-api-metadata
     # erase dusts
-    virsh net-destroy default
+    #virsh net-destroy default
     virsh net-undefine default
     restart_service libvirt-bin
 
@@ -486,7 +415,7 @@ function allinone_nova_setup() {
     install_package kvm libvirt-bin pm-utils
     restart_service dbus
     sleep 3
-    virsh net-destroy default
+    #virsh net-destroy default
     virsh net-undefine default
     restart_service libvirt-bin
     
@@ -495,7 +424,7 @@ function allinone_nova_setup() {
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
     
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<CONTROLLER_IP>#${HOST_IP}#" -e "s#<VNC_IP>#${HOST_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    sed -e "s#<CONTROLLER_IP>#${HOST_IP}#" -e "s#<VNC_IP>#${HOST_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${HOST_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
     
     nova-manage db sync
@@ -508,16 +437,16 @@ function allinone_nova_setup() {
 # --------------------------------------------------------------------------------------
 function controller_nova_setup() {
     # install packages
-    install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy rabbitmq-server vlan bridge-utils
+    #install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy rabbitmq-server vlan bridge-utils
+    install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO 'novaUser'@'%' IDENTIFIED BY 'novaPass';"
     
     # set configuration files for nova
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<NOVA_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<GLANCE_IP>#${GLANCE_IP}#" -e "s#<QUANTUM_IP>#${QUANTUM_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<COMPUTE_NODE_IP>#${CONTROLLER_NODE_PUB_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
-    
-    chown -R nova. /etc/nova
-    chmod 644 /etc/nova/nova.conf
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
+
+    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+
     nova-manage db sync
     # restart processes
     cd /etc/init.d/; for i in $( ls nova-* ); do sudo service $i restart; done
@@ -530,7 +459,9 @@ function controller_nova_setup() {
 function compute_nova_setup() {
     # install dependency packages
     install_package vlan bridge-utils kvm libvirt-bin pm-utils
-    virsh net-destroy default
+    restart_service dbus
+    sleep 3
+    #virsh net-destroy default
     virsh net-undefine default
 
     # install openvswitch and add bridge interfaces
@@ -539,28 +470,23 @@ function compute_nova_setup() {
     ovs-vsctl add-br br-eth1
     ovs-vsctl add-port br-eth1 ${DATA_NIC_COMPUTE}
 
-    # quantum setup
+    # install openvswitch quantum plugin
     install_package quantum-plugin-openvswitch-agent
-    if [[ "$NETWORK_TYPE" = "gre" ]]; then
-        sed -e "s#<QUANTUM_IP>#${COMPUTE_NODE_IP}#" -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-    elif [[ "$NETWORK_TYPE" = "vlan" ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
-    else
-        echo "<network_type> must be 'gre' or 'vlan'."
-        exit 1
-    fi
-    sed -e "s#<RABBIT_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
+
+    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
+
+    # quantum setup
     service quantum-plugin-openvswitch-agent restart
 
     # nova setup
-    install_package nova-api-metadata nova-compute-kvm
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<NOVA_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<GLANCE_IP>#${GLANCE_IP}#" -e "s#<QUANTUM_IP>#${QUANTUM_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<COMPUTE_NODE_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    install_package nova-compute-kvm
+
+    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
+    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
-    
-    chown -R nova. /etc/nova
-    chmod 644 /etc/nova/nova.conf
-    nova-manage db sync
+
+    #nova-manage db sync
 
     # restart processes
     cd /etc/init.d/; for i in $( ls nova-* ); do sudo service $i restart; done
@@ -616,14 +542,7 @@ function scgroup_allow() {
     export OS_USERNAME=${DEMO_USER}
     export OS_PASSWORD=${DEMO_PASSWORD}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-    if [[ "$1" = "allinone" ]]; then
-        export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
-    elif [[ "$1" = "controller" ]]; then
-        export SERVICE_ENDPOINT="http://${KEYSTONE_PUB_IP}:35357/v2.0"
-    else
-        echo "Mode must be allinone or controller."
-        exit 1
-    fi
+    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
 
     nova --no-cache secgroup-add-rule default tcp 22 22 0.0.0.0/0
     nova --no-cache secgroup-add-rule default icmp -1 -1 0.0.0.0/0
@@ -634,14 +553,7 @@ function scgroup_allow() {
     export OS_USERNAME=${OS_USERNAME}
     export OS_PASSWORD=${OS_PASSWORD}
     export OS_AUTH_URL="http://${KEYSTONE_IP}:5000/v2.0/"
-    if [[ "$1" = "allinone" ]]; then
-        export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
-    elif [[ "$1" = "controller" ]]; then
-        export SERVICE_ENDPOINT="http://${KEYSTONE_PUB_IP}:35357/v2.0"
-    else
-        echo "Mode must be allinone or controller."
-        exit 1
-    fi
+    export SERVICE_ENDPOINT="http://${KEYSTONE_IP}:35357/v2.0"
 }
 
 # --------------------------------------------------------------------------------------
@@ -835,7 +747,7 @@ elif [[ "$2" = "quantum" ]]; then
             fi
 
             check_env
-            shell_env
+            shell_env allinone
             create_network
             ;;
         *)

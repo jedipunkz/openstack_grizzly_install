@@ -4,8 +4,8 @@
 function check_env() {
     if [[ -x $(which lsb_release 2>/dev/null) ]]; then
         CODENAME=$(lsb_release -c -s)
-        if [[ $CODENAME != "raring" ]]; then
-            echo "This code was tested on precise and quantal only."
+        if [[ $CODENAME != "precise" ]]; then
+            echo "This code was tested on precise only."
             exit 1
         fi
     else
