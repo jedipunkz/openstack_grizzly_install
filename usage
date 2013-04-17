@@ -1,7 +1,6 @@
-usage) % sudo ./setup.sh <node_type> <network_type>
+usage) % sudo ./setup.sh <node_type>
 
   <node_type>    : allinone|controller|network|compute
-  <network_type> : nova-network|quantum
 
-example) % sudo ./setup.sh allinone nova-network
+example) % sudo ./setup.sh allinone
 
