@@ -6,6 +6,9 @@ function check_os() {
     echo $VENDER
 }
 
+# --------------------------------------------------------------------------------------
+# check os codename
+# --------------------------------------------------------------------------------------
 function check_codename() {
     CODENAME=$(lsb_release -c -s)
     echo $CODENAME
