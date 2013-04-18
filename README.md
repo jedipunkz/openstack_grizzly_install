@@ -102,7 +102,8 @@ Please setup network interfaces just like this.
         dns-nameservers 8.8.8.8 8.8.4.4
 
 login and use this script via eth1 on management network. eth0 will be lost
-connectivity when you run this script.
+connectivity when you run this script. and make sure hostname resolv at
+/etc/hosts. in this sample, your host need resolv self fqdn in 10.200.10.10
 
 #### Get this script
 
@@ -204,7 +205,8 @@ Set up NICs for controller node.
         dns-search example.com
 
 and login to controller node via eth0 (public network) for executing this script.
-Other NIC will lost connectivity.
+Other NIC will lost connectivity. and make sure hostname resolv at
+/etc/hosts. in this sample, your host need resolv self fqdn in 10.200.9.10
 
 #### Network Node's network interfaces
 
@@ -283,19 +285,9 @@ Run this script, all of conpornents will be built.
 That's all and You've done. :D Now you can access to Horizon
 (http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.
 
-Using Metadata server with quantum
-----
-
-VM can get some informations from metadata server on controller node.
-add a routing table to VM range network like this.
-
-    controller% source ~/openstackrc # use admin user
-    controller% quantum router-list  # get route-id
-    controller% quantum port-list -- --device_id <router_id> --device_owner network:router_gateway # get router I/F addr
-    controller% route add -net 172.24.17.0/24 gw <route_if_addr>
-
 Version and Change log
 ----
 
+* 2013/04/18 : version 0.2 : enabled LBaaS, fixed a problem to access metadata server from vm.
 * 2013/04/17 : version 0.1 : First release.
 

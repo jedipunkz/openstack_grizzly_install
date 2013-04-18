@@ -5,7 +5,7 @@
 # --------------------------------------------------------------------------------------
 function allinone_quantum_setup() {
     # install packages
-    install_package quantum-server quantum-plugin-openvswitch quantum-plugin-openvswitch-agent dnsmasq quantum-dhcp-agent quantum-l3-agent
+    install_package quantum-server quantum-plugin-openvswitch quantum-plugin-openvswitch-agent dnsmasq quantum-dhcp-agent quantum-l3-agent quantum-lbaas-agent
 
     # create database for quantum
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE quantum;"
@@ -37,6 +37,7 @@ function controller_quantum_setup() {
     # set configuration files
     sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${QUANUTM_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.controller > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
+    sed -e "s#<CONTROLLER_IP>#localhost#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
     
     # restart process
     restart_service quantum-server
@@ -48,7 +49,7 @@ function controller_quantum_setup() {
 function network_quantum_setup() {
     # install packages
     install_package mysql-client
-    install_package quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent quantum-metadata-agent
+    install_package quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent quantum-metadata-agent quantum-lbaas-agent
 
     # set configuration files
     sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/metadata_agent.ini > /etc/quantum/metadata_agent.ini
