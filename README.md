@@ -41,15 +41,15 @@ you need disk device for cinder like /dev/sdb1. if you do not have additional
 disk device, you can partition the disk device by partitioner.(/dev/sda6) and
 please set device name ${CINDER_VOLUME} on setup.conf
 
-#### on all in one node mode
+#### in all in one node mode
 
 You need 2 NICs (management network, public network). You can run this script
 via management network NIC. VM can access to the internet via public network
 NIC (default : eth0, You can change device on setup.conf).
 
-#### on separated node mode
+#### in separated nodes mode
 
-You need 3 NICs...
+You need 3 NICs for ..
 
 * management network
 * public network / API network (default: eth0)
@@ -60,7 +60,10 @@ for more details, please see this doc.
 <http://docs.openstack.org/trunk/openstack-network/admin/content/app_demo_single_router.html>
 
 Quantum was designed on 4 networks (public, data, managememt, api) so You can
-3 NICs on separated nodes mode.
+3 NICs on separated nodes mode. API network and Public network can share same
+network segment or you can separate these networks. This README's
+configuration of the premise is sharing a segment with API and Public network
+(default NIC : eth0).
 
 How to use on All in One Node
 ----
@@ -200,6 +203,9 @@ Set up NICs for controller node.
         dns-nameservers 8.8.8.8 8.8.4.4
         dns-search example.com
 
+and login to controller node via eth0 (public network) for executing this script.
+Other NIC will lost connectivity.
+
 #### Network Node's network interfaces
 
 Set up NICs for network node.
@@ -236,6 +242,9 @@ Set up NICs for network node.
         dns-nameservers 8.8.8.8 8.8.4.4
         dns-search example.com
 
+and login to network node via eth2 (management network) for executing this
+script. Other NIC will lost connectivity.
+
 #### Compute Node's network interfaces
 
 Set up NICs for network node.
@@ -260,6 +269,8 @@ Set up NICs for network node.
         dns-nameservers 8.8.8.8 8.8.4.4
         dns-search example.com
 
+and login to compute node via eth2 (mangement network) for executing this
+script. Other NIC will lost connectivity.
 
 #### Run script
 
