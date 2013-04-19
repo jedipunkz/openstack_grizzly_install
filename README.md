@@ -290,7 +290,6 @@ Licensing
 
 This Script  is licensed under a Creative Commons Attribution 3.0 Unported License.
 
-.. image:: http://i.imgur.com/4XWrp.png
 To view a copy of this license, visit
 [ http://creativecommons.org/licenses/by/3.0/deed.en_US ].
 
