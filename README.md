@@ -285,6 +285,22 @@ Run this script, all of conpornents will be built.
 That's all and You've done. :D Now you can access to Horizon
 (http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.
 
+Licensing
+----
+
+This Script  is licensed under a Creative Commons Attribution 3.0 Unported License.
+
+.. image:: http://i.imgur.com/4XWrp.png
+To view a copy of this license, visit
+[ http://creativecommons.org/licenses/by/3.0/deed.en_US ].
+
+Credits
+----
+
+This work has been based on: msekbibilel's guide.
+
+<https://github.com/mseknibilel/OpenStack-Grizzly-Install-Guide>
+
 Version and Change log
 ----
 
