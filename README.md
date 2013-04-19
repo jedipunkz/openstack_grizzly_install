@@ -296,7 +296,7 @@ To view a copy of this license, visit
 Credits
 ----
 
-This work has been based on: msekbibilel's guide.
+This work has been based on: mseknibilel's guide.
 
 <https://github.com/mseknibilel/OpenStack-Grizzly-Install-Guide>
 
