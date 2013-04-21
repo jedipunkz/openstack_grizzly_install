@@ -285,6 +285,48 @@ Run this script, all of conpornents will be built.
 That's all and You've done. :D Now you can access to Horizon
 (http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.
 
+#### Parameters
+
+These are Meaning of parameters.
+
+* HOST_IP : IP addr on management network with 'allinone' node
+* HOST_PUB_IP : IP addr on public network with 'allinone' node
+* PUBLIC_NIC : NIC name on public network with 'allinone' node
+* CONTROLLER_NODE_IP : IP addr on management network with controller node
+* CONTROLLER_NODE_PUB_IP : IP addr on public network with controller node
+* NETWORK_NODE_IP : IP addr on management network with network node
+* COMPUTE_NODE_IP : IP addr on management network with compute node
+* DATA_NIC_CONTROLLER : NIC name on data network with controller node
+* DATA_NIC_COMPUTE : NIC name on data network with compute nod
+* PUBLIC_NIC : NIC name on public network on network node
+* CINDER_VOLUME : Disk device name for Cinder Volume
+* MYSQL_PASS : root password of MySQL
+* DB_KEYSTONE_USER : MySQL user for Keystone
+* DB_KEYSTONE_PASS : MySQL password for Keystone
+* DB_GLANCE_USER : MySQL user for Glance
+* DB_GLANCEPASS : MySQL password for Glance
+* DB_QUANTUM_USER : MySQL user for Quantum
+* DB_QUANTUM_PASS : MySQL password for Quantum
+* DB_NOVA_USER : MySQL user for Nova
+* DB_NOVA_PASS : MySQL password for Nova
+* DB_CINDER_USER : MySQL user for Cinder
+* DB_CINDER_PASS : MySQL password for CInder
+* ADMIN_PASSWORD : Keystone password for admin user
+* SERVICE_PASSWORD : Keystone password for service user
+* OS_TENANT_NAME : OS tenant name
+* OS_USERNAME : OS username
+* OS_PASSWORD : OS password
+* DEMO_USER : first user for DEMO
+* DEMO_PASSWORD : first user's password for DEMO
+* INT_NET_GATEWAY : Gateway address of internal network 
+* INT_NET_RANGE : Range of external network
+* EXT_NET_GATEWAY : Gateway address of external network
+* EXT_NET_START : Starging address of external network
+* EXT_NET_END : Ending address of external network
+* EXT_NET_RANGE : Range of external network
+* OS_IMAGE_URL : URL for downloading OS image file
+* OS_IMAGE_NAME : Name of OS IMAGE name for Glance service
+
 Licensing
 ----
 
