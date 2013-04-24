@@ -295,7 +295,7 @@ function compute_nova_setup() {
     # adding bridge and port
     ovs-vsctl add-br br-int
     ovs-vsctl add-br br-eth1
-    ovs-vsctl add-port br-eth1 ${DATA_NIC_COMPUTE}
+    ovs-vsctl add-port br-eth1 ${DATANETWORK_NIC_COMPUTE_NODE}
 
     #
     # Quantum
@@ -422,8 +422,8 @@ function openvswitch_setup() {
     ovs-vsctl add-br br-int
     ovs-vsctl add-br br-eth1
     if [[ "$1" = "network" ]]; then
-        ovs-vsctl add-port br-eth1 ${DATA_NIC_CONTROLLER}
+        ovs-vsctl add-port br-eth1 ${DATANETWORK_NIC_NETWORK_NODE}
     fi
     ovs-vsctl add-br br-ex
-    ovs-vsctl add-port br-ex ${PUBLIC_NIC}
+    ovs-vsctl add-port br-ex ${PUBLICNETWORK_NIC}
 }

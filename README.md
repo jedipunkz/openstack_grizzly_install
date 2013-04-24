@@ -119,7 +119,7 @@ which you need to edit is such things.
 
     HOST_IP='10.200.10.10'
     HOST_PUB_IP='10.200.9.10'
-    PUBLIC_NIC='eth0'
+    PUBLICNETWORK_NIC='eth0'
 
 If you want to change other parameters such as DB password, admin password,
 please change these.
@@ -158,9 +158,9 @@ which you need to edit is such things.
     CONTROLLER_NODE_PUB_IP='10.200.9.10'
     NETWORK_NODE_IP='10.200.10.11'
     COMPUTE_NODE_IP='10.200.10.12'
-    DATA_NIC_CONTROLLER='eth1'
-    DATA_NIC_COMPUTE='eth1'
-    PUBLIC_NIC='eth0'
+    DATANETWORK_NIC_NETWORK_NODE='eth1'
+    DATANETWORK_NIC_COMPUTE_NODE='eth1'
+    PUBLICNETWORK_NIC='eth0'
 
 If you want to change other parameters such as DB password, admin password,
 please change these.
@@ -190,15 +190,9 @@ Set up NICs for controller node.
         dns-nameservers 8.8.8.8 8.8.4.4
         dns-search example.com
 
-    # for VM traffic to the internet
+    # for management network
     auto eth1
     iface eth1 inet static
-        address 172.16.1.10
-        netmask 255.255.255.0
-
-    # for management network
-    auto eth2
-    iface eth2 inet static
         address 10.200.10.10
         netmask 255.255.255.0
         dns-nameservers 8.8.8.8 8.8.4.4
