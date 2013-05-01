@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Openstack grizzly install by jedipunkz</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Openstack grizzly install</h1>
+        <h2>Installation bash script for OpenStack Grizzly Release.</h2>
+        <a href="https://github.com/jedipunkz/openstack_grizzly_install" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>OpenStack Grizzly Installation Script</h1>
+
+<p>OpenStack Grizzly Installation Bash Script for Ubuntu Server 12.04 LTS.</p>
+
+<h2>Author</h2>
+
+<p>Tomokazu Hirai <a href="https://github.com/jedipunkz" class="user-mention">@jedipunkz</a></p>
+
+<p>Twitter : <a href="https://twitter.com/jedipunkz">https://twitter.com/jedipunkz</a>
+Blog    : <a href="http://jedipunkz.github.io">http://jedipunkz.github.io</a></p>
+
+<h2>Notice</h2>
+
+<p>This script was tested ..</p>
+
+<ul>
+<li>all in one node with quantum</li>
+<li>separated nodes (controller node, network node, compute x n) with quantum</li>
+<li>GRE Tunnel</li>
+</ul><p>so, now I do not support separated nodes for each service (keystone, glance,
+nova, etc...). If you want to do this with separated nodes mode, please tell
+me for fork it.</p>
+
+<h2>Motivation</h2>
+
+<p>devstack is very usefull for me. I am using devstack for understanding
+openstack, especially Quantum ! ;) but when I reboot devstack node, all of
+openstack compornents was not booted. That is not good for me. and I wanted to
+use Ubuntu Cloud Archive packages.</p>
+
+<h2>Require Environment</h2>
+
+<h4>cinder device</h4>
+
+<p>you need disk device for cinder like /dev/sdb1. if you do not have additional
+disk device, you can partition the disk device by partitioner.(/dev/sda6) and
+please set device name ${CINDER_VOLUME} on setup.conf</p>
+
+<h4>in all in one node mode</h4>
+
+<p>You need 2 NICs (management network, public network). You can run this script
+via management network NIC. VM can access to the internet via public network
+NIC (default : eth0, You can change device on setup.conf).</p>
+
+<h4>in separated nodes mode</h4>
+
+<p>You need 3 NICs for ..</p>
+
+<ul>
+<li>management network</li>
+<li>public network / API network (default: eth0)</li>
+<li>data network (default: eth1)</li>
+</ul><p>for more details, please see this doc. </p>
+
+<p><a href="http://docs.openstack.org/trunk/openstack-network/admin/content/app_demo_single_router.html">http://docs.openstack.org/trunk/openstack-network/admin/content/app_demo_single_router.html</a></p>
+
+<p>Quantum was designed on 4 networks (public, data, managememt, api) so You can
+3 NICs on separated nodes mode. API network and Public network can share same
+network segment or you can separate these networks. This README's
+configuration of the premise is sharing a segment with API and Public network
+(default NIC : eth0).</p>
+
+<h2>How to use on All in One Node</h2>
+
+<h4>OS installation</h4>
+
+<p>Please make a partition such as /dev/sda6 for cinder volumes, if you do not
+have a additional disk device. and install openssh-server only.</p>
+
+<h4>Setup network interfaces</h4>
+
+<p>Please setup network interfaces just like this.</p>
+
+<pre><code>% sudo ${EDITOR} /etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+# this NIC will be used for VM traffic to the internet
+auto eth0
+iface eth0 inet static
+    up ifconfig $IFACE 0.0.0.0 up
+    up ip link set $IFACE promisc on
+    down ip link set $IFACE promisc off
+    down ifconfig $IFACE down
+    address 10.200.9.10
+    netmask 255.255.255.0
+    dns-nameservers 8.8.8.8 8.8.4.4
+    dns-search example.com
+
+# this NIC must be on management network
+auto eth1
+iface eth1 inet static
+    address 10.200.10.10
+    netmask 255.255.255.0
+    gateway 10.200.10.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+</code></pre>
+
+<p>login and use this script via eth1 on management network. eth0 will be lost
+connectivity when you run this script. and make sure hostname resolv at
+/etc/hosts. in this sample, your host need resolv self fqdn in 10.200.10.10</p>
+
+<h4>Get this script</h4>
+
+<p>git clone this script from github.</p>
+
+<pre><code>% git clone git://github.com/jedipunkz/openstack_grizlly_install.git
+% cd openstack_grizzly_install
+</code></pre>
+
+<h4>Edit parameters on setup.conf</h4>
+
+<p>There are many paramaters on setup.conf, but in 'allinone' mode, parameters
+which you need to edit is such things.</p>
+
+<pre><code>HOST_IP='10.200.10.10'
+HOST_PUB_IP='10.200.9.10'
+PUBLICNETWORK_NIC='eth0'
+</code></pre>
+
+<p>If you want to change other parameters such as DB password, admin password,
+please change these.</p>
+
+<h4>Run script</h4>
+
+<p>Run this script, all of conpornents will be built.</p>
+
+<pre><code>% sudo ./setup.sh allinone
+</code></pre>
+
+<p>That's all and You've done. :D Now you can access to Horizon
+(http://${HOST_IP}/horizon/) with user 'demo', password 'demo'.</p>
+
+<h2>How to use on separated nodes mode</h2>
+
+<h4>OS installation</h4>
+
+<p>Please make a partition such as /dev/sda6 for cinder volumes, if you do not
+have a additional disk device. and install openssh-server only. and you should
+3 nodes or more. (controller, network, compute) nodes.</p>
+
+<h4>Get this script</h4>
+
+<p>git clone this script from github on controller node.</p>
+
+<pre><code>controller% git clone git://github.com/jedipunkz/openstack_grizlly_install.git
+controller% cd openstack_grizzly_install
+</code></pre>
+
+<h4>Edit parameters on setup.conf</h4>
+
+<p>There are many paramaters on setup.conf, but in 'allinone' mode, parameters
+which you need to edit is such things.</p>
+
+<pre><code>CONTROLLER_NODE_IP='10.200.10.10'
+CONTROLLER_NODE_PUB_IP='10.200.9.10'
+NETWORK_NODE_IP='10.200.10.11'
+COMPUTE_NODE_IP='10.200.10.12'
+DATANETWORK_NIC_NETWORK_NODE='eth1'
+DATANETWORK_NIC_COMPUTE_NODE='eth1'
+PUBLICNETWORK_NIC='eth0'
+</code></pre>
+
+<p>If you want to change other parameters such as DB password, admin password,
+please change these.</p>
+
+<h4>copy to other nodes</h4>
+
+<p>copy directory to network node and compute node.</p>
+
+<pre><code>controller% scp -r openstack_grizzly_install &lt;network_node_ip&gt;:~/
+controller% scp -r openstack_grizzly_install &lt;compute_node_ip&gt;:~/
+</code></pre>
+
+<h4>Controller Node's network interfaces</h4>
+
+<p>Set up NICs for controller node.</p>
+
+<pre><code>controller% sudo ${EDITOR} /etc/network/interfaces
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# for API network
+auto eth0
+iface eth0 inet static
+    address 10.200.9.10
+    netmask 255.255.255.0
+    gateway 10.200.9.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+    dns-search example.com
+
+# for management network
+auto eth1
+iface eth1 inet static
+    address 10.200.10.10
+    netmask 255.255.255.0
+    dns-nameservers 8.8.8.8 8.8.4.4
+    dns-search example.com
+</code></pre>
+
+<p>and login to controller node via eth0 (public network) for executing this script.
+Other NIC will lost connectivity. and make sure hostname resolv at
+/etc/hosts. in this sample, your host need resolv self fqdn in 10.200.9.10</p>
+
+<h4>Network Node's network interfaces</h4>
+
+<p>Set up NICs for network node.</p>
+
+<pre><code>network% sudo ${EDITOR} /etc/network/interfaces
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# for API network
+auto eth0
+iface eth0 inet static
+    up ifconfig $IFACE 0.0.0.0 up
+    up ip link set $IFACE promisc on
+    down ip link set $IFACE promisc off
+    down ifconfig $IFACE down
+    address 10.200.9.11
+    netmask 255.255.255.0
+    dns-nameservers 8.8.8.8 8.8.4.4
+    dns-search example.com
+
+# for VM traffic to the internet
+auto eth1
+iface eth1 inet static
+    address 172.16.1.11
+    netmask 255.255.255.0
+
+# for management network
+auto eth2
+iface eth2 inet static
+    address 10.200.10.11
+    netmask 255.255.255.0
+    gateway 10.200.10.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+    dns-search example.com
+</code></pre>
+
+<p>and login to network node via eth2 (management network) for executing this
+script. Other NIC will lost connectivity.</p>
+
+<h4>Compute Node's network interfaces</h4>
+
+<p>Set up NICs for network node.</p>
+
+<pre><code>compute% sudo ${EDITOR} /etc/network/interfaces
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# for VM traffic to the internet
+auto eth0
+iface eth0 inet static
+    address 172.16.1.12
+    netmask 255.255.255.0
+
+# for management network
+auto eth1
+iface eth1 inet static
+    address 10.200.10.12
+    netmask 255.255.255.0
+    gateway 10.200.10.1
+    dns-nameservers 8.8.8.8 8.8.4.4
+    dns-search example.com
+</code></pre>
+
+<p>and login to compute node via eth2 (mangement network) for executing this
+script. Other NIC will lost connectivity.</p>
+
+<h4>Run script</h4>
+
+<p>Run this script, all of conpornents will be built.</p>
+
+<pre><code>controller% sudo ./setup.sh controller
+network   % sudo ./setup.sh network
+compute   % sudo ./setup.sh comupte
+</code></pre>
+
+<p>That's all and You've done. :D Now you can access to Horizon
+(http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.</p>
+
+<h2>Parameters</h2>
+
+<p>These are Meaning of parameters.</p>
+
+<ul>
+<li>HOST_IP : IP addr on management network with 'allinone' node</li>
+<li>HOST_PUB_IP : IP addr on public network with 'allinone' node</li>
+<li>PUBLIC_NIC : NIC name on public network with 'allinone' node</li>
+<li>CONTROLLER_NODE_IP : IP addr on management network with controller node</li>
+<li>CONTROLLER_NODE_PUB_IP : IP addr on public network with controller node</li>
+<li>NETWORK_NODE_IP : IP addr on management network with network node</li>
+<li>COMPUTE_NODE_IP : IP addr on management network with compute node</li>
+<li>DATA_NIC_CONTROLLER : NIC name on data network with controller node</li>
+<li>DATA_NIC_COMPUTE : NIC name on data network with compute nod</li>
+<li>PUBLIC_NIC : NIC name on public network on network node</li>
+<li>CINDER_VOLUME : Disk device name for Cinder Volume</li>
+<li>MYSQL_PASS : root password of MySQL</li>
+<li>DB_KEYSTONE_USER : MySQL user for Keystone</li>
+<li>DB_KEYSTONE_PASS : MySQL password for Keystone</li>
+<li>DB_GLANCE_USER : MySQL user for Glance</li>
+<li>DB_GLANCEPASS : MySQL password for Glance</li>
+<li>DB_QUANTUM_USER : MySQL user for Quantum</li>
+<li>DB_QUANTUM_PASS : MySQL password for Quantum</li>
+<li>DB_NOVA_USER : MySQL user for Nova</li>
+<li>DB_NOVA_PASS : MySQL password for Nova</li>
+<li>DB_CINDER_USER : MySQL user for Cinder</li>
+<li>DB_CINDER_PASS : MySQL password for CInder</li>
+<li>ADMIN_PASSWORD : Keystone password for admin user</li>
+<li>SERVICE_PASSWORD : Keystone password for service user</li>
+<li>OS_TENANT_NAME : OS tenant name</li>
+<li>OS_USERNAME : OS username</li>
+<li>OS_PASSWORD : OS password</li>
+<li>DEMO_USER : first user for DEMO</li>
+<li>DEMO_PASSWORD : first user's password for DEMO</li>
+<li>INT_NET_GATEWAY : Gateway address of internal network </li>
+<li>INT_NET_RANGE : Range of external network</li>
+<li>EXT_NET_GATEWAY : Gateway address of external network</li>
+<li>EXT_NET_START : Starging address of external network</li>
+<li>EXT_NET_END : Ending address of external network</li>
+<li>EXT_NET_RANGE : Range of external network</li>
+<li>OS_IMAGE_URL : URL for downloading OS image file</li>
+<li>OS_IMAGE_NAME : Name of OS IMAGE name for Glance service</li>
+</ul><h2>Licensing</h2>
+
+<p>This Script  is licensed under a Creative Commons Attribution 3.0 Unported License.</p>
+
+<p>To view a copy of this license, visit
+[ <a href="http://creativecommons.org/licenses/by/3.0/deed.en_US">http://creativecommons.org/licenses/by/3.0/deed.en_US</a> ].</p>
+
+<h2>Credits</h2>
+
+<p>This work has been based on: mseknibilel's guide.</p>
+
+<p><a href="https://github.com/mseknibilel/OpenStack-Grizzly-Install-Guide">https://github.com/mseknibilel/OpenStack-Grizzly-Install-Guide</a></p>
+
+<h2>Version and Change log</h2>
+
+<ul>
+<li>2013/04/18 : version 0.2 : enabled LBaaS, fixed a problem to access metadata server from vm.</li>
+<li>2013/04/17 : version 0.1 : First release.</li>
+</ul>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/jedipunkz/openstack_grizzly_install/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/jedipunkz/openstack_grizzly_install/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/jedipunkz/openstack_grizzly_install"></a> is maintained by <a href="https://github.com/jedipunkz">jedipunkz</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
