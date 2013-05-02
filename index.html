@@ -313,6 +313,22 @@ compute   % sudo ./setup.sh comupte
 <p>That's all and You've done. :D Now you can access to Horizon
 (http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.</p>
 
+<h4>Additional Compute Node</h4>
+
+<p>If you want to have additional compute node(s), please setup network
+interfaces as noted before and execute these commands.</p>
+
+<p>Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh. It does note
+change other.</p>
+
+<pre><code>controller    % scp -r ~/openstack_grizzly_install &lt;add_controller_node&gt;:~/
+add_controller% cd openstack_grizzly_install
+add_controller% ${EDITOR} setup.conf
+COMPUTE_NODE_IP='&lt;your additional compute node ip&gt;'
+add_controller% sudo ./setup.sh compute
+add_controller% sudo nova-manage service list # check nodes list
+</code></pre>
+
 <h2>Parameters</h2>
 
 <p>These are Meaning of parameters.</p>
