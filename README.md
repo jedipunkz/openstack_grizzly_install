@@ -279,6 +279,22 @@ Run this script, all of conpornents will be built.
 That's all and You've done. :D Now you can access to Horizon
 (http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.
 
+#### Additional Compute Node
+
+If you want to have additional compute node(s), please setup network
+interfaces as noted before and execute these commands.
+
+Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh. It does note
+change other.
+
+    controller    % scp -r ~/openstack_grizzly_install <add_controller_node>:~/
+    add_controller% cd openstack_grizzly_install
+    add_controller% ${EDITOR} setup.conf
+    COMPUTE_NODE_IP='<your additional compute node ip>'
+    add_controller% sudo ./setup.sh compute
+    add_controller% sudo nova-manage service list # check nodes list
+
+
 Parameters
 ----
 
