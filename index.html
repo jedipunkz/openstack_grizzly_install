@@ -92,7 +92,24 @@ configuration of the premise is sharing a segment with API and Public network
 
 <h2>How to use on All in One Node</h2>
 
-<h4>OS installation</h4>
+<h4>Architecture</h4>
+
+<pre><code>+------------------- Public/API Network
+|
++------------+
+|vm|vm|...   |
++------------+
+| all in one |
++------------+
+|     |      
++-----)------------- Management/API Network
+      |             
+      +------------- Data Network
+</code></pre>
+
+<ul>
+<li>all of compornetns are on same node.</li>
+</ul><h4>OS installation</h4>
 
 <p>Please make a partition such as /dev/sda6 for cinder volumes, if you do not
 have a additional disk device. and install openssh-server only.</p>
@@ -163,7 +180,28 @@ please change these.</p>
 
 <h2>How to use on separated nodes mode</h2>
 
-<h4>OS installation</h4>
+<h4>Architecture</h4>
+
+<pre><code>+-------------+-------------+------------------------------ Public/API Network
+|             |             |             
++-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+|           | |           | |           | |vm|vm|..   | |vm|vm|..   |
+| controller| |  network  | |  network  | +-----------+ +-----------+
+|           | |           | | additional| |  compute  | |  compute  |
+|           | |           | |           | |           | | additional|
++-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+|             |     |       |     |       |     |       |
++-------------+-----)-------+-----)-------+-----)-------)-- Management/API Network
+                    |             |             |       |
+                    +-------------+-------------+---------- Data Network
+</code></pre>
+
+<ul>
+<li>minimum architecture : 3 nodes (controller node x 1, network node x 1, compute node x1)</li>
+<li>You can add some network nodes and compute nodes.</li>
+<li>additional network node(s) make you be able to have duplication of each agent</li>
+<li>additional compute node(s) make you be able to have more VMs.</li>
+</ul><h4>OS installation</h4>
 
 <p>Please make a partition such as /dev/sda6 for cinder volumes, if you do not
 have a additional disk device. and install openssh-server only. and you should
@@ -316,17 +354,32 @@ compute   % sudo ./setup.sh comupte
 <h4>Additional Compute Node</h4>
 
 <p>If you want to have additional compute node(s), please setup network
-interfaces as noted before and execute these commands.</p>
+interfaces as noted before for compute node and execute these commands.</p>
 
-<p>Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh. It does note
-change other.</p>
+<p>Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh.</p>
 
-<pre><code>controller    % scp -r ~/openstack_grizzly_install &lt;add_controller_node&gt;:~/
-add_controller% cd openstack_grizzly_install
-add_controller% ${EDITOR} setup.conf
-COMPUTE_NODE_IP='&lt;your additional compute node ip&gt;'
-add_controller% sudo ./setup.sh compute
-add_controller% sudo nova-manage service list # check nodes list
+<pre><code>compute    % scp -r ~/openstack_grizzly_install &lt;add_compute_node&gt;:~/
+add_compute% cd openstack_grizzly_install
+add_compute% ${EDITOR} setup.conf
+COMPUTE_NODE_IP='&lt;your additional compute node's ip&gt;'
+add_compute% sudo ./setup.sh compute
+add_compute% sudo nova-manage service list # check nodes list
+</code></pre>
+
+<h4>Additional Network Node</h4>
+
+<p>If you want to have additional network node(s), please setup network
+interfaces as noted before for network node and execute these commands.</p>
+
+<p>Edit setup.conf (NETWORK_NODE_IP parameter) and execute setup.sh.</p>
+
+<pre><code>network    % scp -r ~/openstack_grizzly_install &lt;add_network_node&gt;:~/
+add_network% cd openstack_grizzly_install
+add_network% ${EDITOR} setup.conf
+NETWORK_NODE_IP='&lt;your additional network node's ip&gt;'
+add_network% sudo ./setup.sh network
+add_network% source ~/openstackrc
+add_network% quantum agent-list # check agent list
 </code></pre>
 
 <h2>Parameters</h2>
