@@ -66,22 +66,30 @@ function network_quantum_setup() {
 # create network via quantum
 # --------------------------------------------------------------------------------------
 function create_network() {
-    # create internal network
-    TENANT_ID=$(keystone tenant-list | grep " service " | get_field 1)
-    INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net | grep ' id ' | get_field 2)
-    # create internal sub network
-    INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
-    quantum subnet-update ${INT_SUBNET_ID} list=true --dns_nameservers 8.8.8.8 8.8.4.4
-    # create internal router
-    INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-demo | grep ' id ' | get_field 2)
-    INT_L3_AGENT_ID=$(quantum agent-list | grep ' L3 agent ' | get_field 1)
-    quantum l3-agent-router-add ${INT_L3_AGENT_ID} router-demo
-    quantum router-interface-add ${INT_ROUTER_ID} ${INT_SUBNET_ID}
-    # create external network
-    EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)
-    # create external sub network
-    quantum subnet-create --tenant-id ${TENANT_ID} --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
-    # set external network to demo router
-    quantum router-gateway-set ${INT_ROUTER_ID} ${EXT_NET_ID}
+
+    # check exist 'router-demo'
+    ROUTER_CHECK=$(quantum router-list | grep "router-demo" | get_field 1)
+    if [[ "$ROUTER_CHECK" == "" ]]; then
+        echo "router does not exist." 
+        # create internal network
+        TENANT_ID=$(keystone tenant-list | grep " service " | get_field 1)
+        INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net | grep ' id ' | get_field 2)
+        # create internal sub network
+        INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
+        quantum subnet-update ${INT_SUBNET_ID} list=true --dns_nameservers 8.8.8.8 8.8.4.4
+        # create internal router
+        INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-demo | grep ' id ' | get_field 2)
+        INT_L3_AGENT_ID=$(quantum agent-list | grep ' L3 agent ' | get_field 1)
+        quantum l3-agent-router-add ${INT_L3_AGENT_ID} router-demo
+        quantum router-interface-add ${INT_ROUTER_ID} ${INT_SUBNET_ID}
+        # create external network
+        EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)
+        # create external sub network
+        quantum subnet-create --tenant-id ${TENANT_ID} --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
+        # set external network to demo router
+        quantum router-gateway-set ${INT_ROUTER_ID} ${EXT_NET_ID}
+    else
+        echo "router exist. You don't need to create network."
+    fi
 }
 

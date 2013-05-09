@@ -68,6 +68,22 @@ configuration of the premise is sharing a segment with API and Public network
 How to use on All in One Node
 ----
 
+#### Architecture
+
+    +------------------- Public/API Network
+    |
+    +------------+
+    |vm|vm|...   |
+    +------------+
+    | all in one |
+    +------------+
+    |     |      
+    +-----)------------- Management/API Network
+          |             
+          +------------- Data Network
+
+* all of compornetns are on same node.
+
 #### OS installation
 
 Please make a partition such as /dev/sda6 for cinder volumes, if you do not
@@ -135,6 +151,26 @@ That's all and You've done. :D Now you can access to Horizon
 
 How to use on separated nodes mode
 ----
+
+#### Architecture
+
+    +-------------+-------------+------------------------------ Public/API Network
+    |             |             |             
+    +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+    |           | |           | |           | |vm|vm|..   | |vm|vm|..   |
+    | controller| |  network  | |  network  | +-----------+ +-----------+
+    |           | |           | | additional| |  compute  | |  compute  |
+    |           | |           | |           | |           | | additional|
+    +-----------+ +-----------+ +-----------+ +-----------+ +-----------+
+    |             |     |       |     |       |     |       |
+    +-------------+-----)-------+-----)-------+-----)-------)-- Management/API Network
+                        |             |             |       |
+                        +-------------+-------------+---------- Data Network
+
+* minimum architecture : 3 nodes (controller node x 1, network node x 1, compute node x1)
+* You can add some network nodes and compute nodes.
+* additional network node(s) make you be able to have duplication of each agent
+* additional compute node(s) make you be able to have more VMs.
 
 #### OS installation
 
@@ -282,18 +318,31 @@ That's all and You've done. :D Now you can access to Horizon
 #### Additional Compute Node
 
 If you want to have additional compute node(s), please setup network
-interfaces as noted before and execute these commands.
+interfaces as noted before for compute node and execute these commands.
 
-Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh. It does note
-change other.
+Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh.
 
-    controller    % scp -r ~/openstack_grizzly_install <add_controller_node>:~/
-    add_controller% cd openstack_grizzly_install
-    add_controller% ${EDITOR} setup.conf
-    COMPUTE_NODE_IP='<your additional compute node ip>'
-    add_controller% sudo ./setup.sh compute
-    add_controller% sudo nova-manage service list # check nodes list
+    compute    % scp -r ~/openstack_grizzly_install <add_compute_node>:~/
+    add_compute% cd openstack_grizzly_install
+    add_compute% ${EDITOR} setup.conf
+    COMPUTE_NODE_IP='<your additional compute node's ip>'
+    add_compute% sudo ./setup.sh compute
+    add_compute% sudo nova-manage service list # check nodes list
 
+#### Additional Network Node
+
+If you want to have additional network node(s), please setup network
+interfaces as noted before for network node and execute these commands.
+
+Edit setup.conf (NETWORK_NODE_IP parameter) and execute setup.sh.
+
+    network    % scp -r ~/openstack_grizzly_install <add_network_node>:~/
+    add_network% cd openstack_grizzly_install
+    add_network% ${EDITOR} setup.conf
+    NETWORK_NODE_IP='<your additional network node's ip>'
+    add_network% sudo ./setup.sh network
+    add_network% source ~/openstackrc
+    add_network% quantum agent-list # check agent list
 
 Parameters
 ----
