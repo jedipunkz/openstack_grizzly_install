@@ -280,7 +280,7 @@ function controller_nova_setup() {
 # --------------------------------------------------------------------------------------
 function compute_nova_setup() {
     # install dependency packages
-    install_package vlan bridge-utils kvm libvirt-bin pm-utils
+    install_package vlan bridge-utils kvm libvirt-bin pm-utils sysfsutils
     restart_service dbus
     sleep 3
     #virsh net-destroy default
