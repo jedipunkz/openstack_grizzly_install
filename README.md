@@ -405,6 +405,7 @@ This work has been based on: mseknibilel's guide.
 Version and Change log
 ----
 
+* 2013/05/13 : version 0.3 : enabled nova live-migration
 * 2013/04/18 : version 0.2 : enabled LBaaS, fixed a problem to access metadata server from vm.
 * 2013/04/17 : version 0.1 : First release.
 

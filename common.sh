@@ -286,6 +286,12 @@ function compute_nova_setup() {
     #virsh net-destroy default
     virsh net-undefine default
 
+    # enable live migration
+    cp $BASE_DIR/conf/etc.libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf
+    sed -i 's/^env\ libvirtd_opts=\"-d\"/env\ libvirtd_opts=\"-d\ -l\"/g' /etc/init/libvirt-bin.conf
+    sed -i 's/libvirtd_opts=\"-d\"/libvirtd_opts=\"-d\ -l\"/g' /etc/default/libvirt-bin
+    restart_service libvirt-bin
+
     #
     # OpenvSwitch
     #
