@@ -211,7 +211,7 @@ function os_add () {
     fi
     
     # download cirros os image
-    wget ${OS_IMAGE_URL} -O ./os.img
+    wget --no-check-certificate ${OS_IMAGE_URL} -O ./os.img
     
     # add os image to glance
     glance image-create --name="${OS_IMAGE_NAME}" --is-public true --container-format bare --disk-format qcow2 < ./os.img
