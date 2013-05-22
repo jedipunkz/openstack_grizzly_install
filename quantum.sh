@@ -80,7 +80,13 @@ function create_network() {
         # create internal router
         INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-demo | grep ' id ' | get_field 2)
         INT_L3_AGENT_ID=$(quantum agent-list | grep ' L3 agent ' | get_field 1)
-        quantum l3-agent-router-add ${INT_L3_AGENT_ID} router-demo
+        while [[ "$INT_L3_AGENT_ID" = "" ]]
+        do
+            echo "waiting for L3 / DHCP agents..."
+            sleep 3
+            INT_L3_AGENT_ID=$(quantum agent-list | grep ' L3 agent ' | get_field 1)
+        done
+#        quantum l3-agent-router-add ${INT_L3_AGENT_ID} router-demo
         quantum router-interface-add ${INT_ROUTER_ID} ${INT_SUBNET_ID}
         # create external network
         EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)

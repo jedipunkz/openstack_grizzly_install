@@ -237,7 +237,7 @@ function allinone_nova_setup() {
 
     # set configuration files
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<METADATA_LISTEN>#${CONTROLLER_NODE_IP}#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    sed -e "s#<METADATA_LISTEN>#${CONTROLLER_NODE_IP}#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
 
     # input nova database to mysqld
@@ -263,7 +263,7 @@ function controller_nova_setup() {
     
     # set configuration files for nova
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<METADATA_LISTEN>#${CONTROLLER_NODE_IP}#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    sed -e "s#<METADATA_LISTEN>#${CONTROLLER_NODE_IP}#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
 
     # input nova database to mysqld
     nova-manage db sync
@@ -324,7 +324,7 @@ function compute_nova_setup() {
 
     # set configuration files
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<METADATA_LISTEN>#127.0.0.1#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    sed -e "s#<METADATA_LISTEN>#127.0.0.1#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${COMPUTE_NODE_IP}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
 
     # restart all of nova services
@@ -359,14 +359,30 @@ function cinder_setup() {
         echo "Warning: Mode must be 'allinone' or 'controller'."
         exit 1
     fi
-    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_CINDER_USER>#${DB_CINDER_USER}#" -e "s#<DB_CINDER_PASS>#${DB_CINDER_PASS}#" $BASE_DIR/conf/etc.cinder/cinder.conf > /etc/cinder/cinder.conf
+    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_CINDER_USER>#${DB_CINDER_USER}#" -e "s#<DB_CINDER_PASS>#${DB_CINDER_PASS}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.cinder/cinder.conf > /etc/cinder/cinder.conf
 
     # input database for cinder
     cinder-manage db sync
 
-    # create pyshical volume and volume group
-    pvcreate ${CINDER_VOLUME}
-    vgcreate cinder-volumes ${CINDER_VOLUME}
+    create cinder-volumes volume group
+    if [[ "$CINDER_VOLUME" = "loop" ]]; then
+        dd if=/dev/zero of=/var/lib/cinder/volumes-disk bs=2 count=0 seek=7G
+        FILE=/var/lib/cinder/volumes-disk
+        LOOP=/dev/loop3
+        modprobe loop
+        losetup $LOOP $FILE
+        pvcreate $LOOP
+        vgcreate cinder-volumes $LOOP
+    else
+        # create pyshical volume and volume group
+        pvcreate ${CINDER_VOLUME}
+        vgcreate cinder-volumes ${CINDER_VOLUME}
+    fi
+
+    # disable tgt daemon
+    stop_service tgt
+    mv /etc/init/tgt.conf /etc/init/tgt.conf.disabled
+    restart_service iscsitarget
 
     # restart all of cinder services
     restart_service cinder-volume
