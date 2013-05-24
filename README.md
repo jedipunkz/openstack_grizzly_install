@@ -35,19 +35,20 @@ use Ubuntu Cloud Archive packages.
 Require Environment
 ----
 
-#### cinder device
+#### Cinder Device
 
-you need disk device for cinder like /dev/sdb1. if you do not have additional
-disk device, you can partition the disk device by partitioner.(/dev/sda6) and
-please set device name ${CINDER_VOLUME} on setup.conf
+If you want use REAL disk device for cinder such as /dev/sdb, please input disk
+device name to $CINDER_VOLUME in setup.conf. If you do not have any additional
+disk for cinder, you can use loopback device. So please input loopback device
+name such as /dev/loop3.
 
-#### in all in one node mode
+#### In All in ne node mode
 
 You need 2 NICs (management network, public network). You can run this script
 via management network NIC. VM can access to the internet via public network
 NIC (default : eth0, You can change device on setup.conf).
 
-#### in separated nodes mode
+#### In separated nodes mode
 
 You need 3 NICs for ..
 
@@ -405,6 +406,7 @@ This work has been based on: mseknibilel's guide.
 Version and Change log
 ----
 
+* 2013/05/24 : version 0.4 : enabled to use loopback device for cinder.
 * 2013/05/13 : version 0.3 : enabled nova live-migration
 * 2013/04/18 : version 0.2 : enabled LBaaS, fixed a problem to access metadata server from vm.
 * 2013/04/17 : version 0.1 : First release.

@@ -364,14 +364,13 @@ function cinder_setup() {
     # input database for cinder
     cinder-manage db sync
 
-    if [[ "$CINDER_VOLUME" = "loop" ]]; then
+    if echo "$CINDER_VOLUME" | grep "loop" ; then
         dd if=/dev/zero of=/var/lib/cinder/volumes-disk bs=2 count=0 seek=7G
         FILE=/var/lib/cinder/volumes-disk
-        LOOP=/dev/loop3
         modprobe loop
-        losetup $LOOP $FILE
-        pvcreate $LOOP
-        vgcreate cinder-volumes $LOOP
+        losetup $CINDER_VOLUME $FILE
+        pvcreate $CINDER_VOLUME
+        vgcreate cinder-volumes $CINDER_VOLUME
     else
         # create pyshical volume and volume group
         pvcreate ${CINDER_VOLUME}

@@ -74,7 +74,8 @@ case "$1" in
         horizon_setup
         create_network
         scgroup_allow allinone
-        echo "Setup for all in one node has done.:D"
+        printf '\033[0;32m%s\033[0m\n' 'This script was completed. :D'
+        printf '\033[0;34m%s\033[0m\n' 'You have done! Enjoy it. :)))))'
         ;;
     controller)
         NOVA_IP=${CONTROLLER_NODE_IP};              check_para ${NOVA_IP}
@@ -95,7 +96,8 @@ case "$1" in
         cinder_setup controller
         horizon_setup
         scgroup_allow controller
-        echo "Setup for controller node has done.:D"
+        printf '\033[0;32m%s\033[0m\n' 'Setup for controller node has done. :D.'
+        printf '\033[0;34m%s\033[0m\n' 'Next, login to network node and exec "sudo ./setup.sh network".'
         ;;
     network)
         NOVA_IP=${CONTROLLER_NODE_IP};     check_para ${NOVA_IP}
@@ -110,7 +112,8 @@ case "$1" in
         openvswitch_setup network
         network_quantum_setup
         create_network
-        echo "Setup for network node has done.:D"
+        printf '\033[0;32m%s\033[0m\n' 'Setup for network node has done. :D'
+        printf '\033[0;34m%s\033[0m\n' 'Next, login to compute node and exec "sudo ./setup.sh compute".'
         ;;
     compute)
         NOVA_IP=${CONTROLLER_NODE_IP};     check_para ${NOVA_IP}
@@ -123,7 +126,8 @@ case "$1" in
         shell_env separate
         init
         compute_nova_setup
-        echo "Setup for compute node has done.:D"
+        printf '\033[0;32m%s\033[0m\n' 'Setup for compute node has done. :D'
+        printf '\033[0;34m%s\033[0m\n' 'You have done! Enjoy it. :)))))'
         ;;
     *)
         print_syntax
