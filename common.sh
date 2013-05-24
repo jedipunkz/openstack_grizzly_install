@@ -76,7 +76,7 @@ function mysql_setup() {
     install_package mysql-server python-mysqldb
 
     # enable to access from the other nodes to local mysqld via network
-    sed -i -e 's/127.0.0.1/0.0.0.0/' /etc/mysql/my.cnf
+    sed -i -e  "s/^\(bind-address\s*=\).*/\1 0.0.0.0/" /etc/mysql/my.cnf
     restart_service mysql
 
     # misc software
@@ -259,7 +259,7 @@ function controller_nova_setup() {
 
     # create database for nova
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
-    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO 'novaUser'@'%' IDENTIFIED BY 'novaPass';"
+    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
     
     # set configuration files for nova
     sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini

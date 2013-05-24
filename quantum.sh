@@ -32,7 +32,7 @@ function controller_quantum_setup() {
     install_package quantum-server quantum-plugin-openvswitch
     # create database for quantum
     mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE quantum;"
-    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO 'quantumUser'@'%' IDENTIFIED BY 'quantumPass';"
+    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO '${DB_QUANTUM_USER}'@'%' IDENTIFIED BY '${DB_QUANTUM_PASS}';"
 
     # set configuration files
     sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${QUANUTM_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.controller > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
