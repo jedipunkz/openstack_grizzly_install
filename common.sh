@@ -364,7 +364,6 @@ function cinder_setup() {
     # input database for cinder
     cinder-manage db sync
 
-    create cinder-volumes volume group
     if [[ "$CINDER_VOLUME" = "loop" ]]; then
         dd if=/dev/zero of=/var/lib/cinder/volumes-disk bs=2 count=0 seek=7G
         FILE=/var/lib/cinder/volumes-disk
