@@ -126,7 +126,7 @@ connectivity when you run this script. and make sure hostname resolv at
 
 git clone this script from github.
 
-    % git clone git://github.com/jedipunkz/openstack_grizlly_install.git
+    % git clone git://github.com/jedipunkz/openstack_grizzly_install.git
     % cd openstack_grizzly_install
 
 #### Edit parameters on setup.conf
@@ -183,7 +183,7 @@ have a additional disk device. and install openssh-server only. and you should
 
 git clone this script from github on controller node.
 
-    controller% git clone git://github.com/jedipunkz/openstack_grizlly_install.git
+    controller% git clone git://github.com/jedipunkz/openstack_grizzly_install.git
     controller% cd openstack_grizzly_install
 
 #### Edit parameters on setup.conf
