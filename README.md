@@ -406,6 +406,7 @@ This work has been based on: mseknibilel's guide.
 Version and Change log
 ----
 
+* 2013/05/27 : version 0.5 : supported vlan mode
 * 2013/05/24 : version 0.4 : enabled to use loopback device for cinder.
 * 2013/05/13 : version 0.3 : enabled nova live-migration
 * 2013/04/18 : version 0.2 : enabled LBaaS, fixed a problem to access metadata server from vm.

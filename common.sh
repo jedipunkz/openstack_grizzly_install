@@ -310,7 +310,15 @@ function compute_nova_setup() {
     install_package quantum-plugin-openvswitch-agent quantum-lbaas-agent
 
     # set configuration files
-    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    if [[ "${NETWORK_TYPE}" = 'gre' ]]; then
+        sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    elif [[ "${NETWORK_TYPE}" = 'vlan' ]]; then
+        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+    else
+        echo "NETWORK_TYPE must be 'vlan' or 'gre'."
+        exit 1
+    fi
+        
     sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
 
     # restart ovs agent
