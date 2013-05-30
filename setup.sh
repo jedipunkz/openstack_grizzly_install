@@ -52,6 +52,7 @@ fi
 
 case "$1" in
     allinone)
+        check_interface $HOST_IP allinone
         NOVA_IP=${HOST_IP};                     check_para ${NOVA_IP}
         CINDER_IP=${HOST_IP};                   check_para ${CINDER_IP}
         DB_IP=${HOST_IP};                       check_para ${DB_IP}
@@ -78,6 +79,7 @@ case "$1" in
         printf '\033[0;34m%s\033[0m\n' 'You have done! Enjoy it. :)))))'
         ;;
     controller)
+        check_interface $CONTROLLER_NODE_PUB_IP controller
         NOVA_IP=${CONTROLLER_NODE_IP};              check_para ${NOVA_IP}
         CINDER_IP=${CONTROLLER_NODE_IP};            check_para ${CINDER_IP}
         DB_IP=${CONTROLLER_NODE_IP};                check_para ${DB_IP}
@@ -100,6 +102,7 @@ case "$1" in
         printf '\033[0;34m%s\033[0m\n' 'Next, login to network node and exec "sudo ./setup.sh network".'
         ;;
     network)
+        check_interface $NETWORK_NODE_IP network
         NOVA_IP=${CONTROLLER_NODE_IP};     check_para ${NOVA_IP}
         CINDER_IP=${CONTROLLER_NODE_IP};   check_para ${CINDER_IP}
         DB_IP=${CONTROLLER_NODE_IP};       check_para ${DB_IP}

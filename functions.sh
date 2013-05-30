@@ -97,3 +97,37 @@ function check_para() {
         exit 1
     fi
 }
+
+# --------------------------------------------------------------------------------------
+# check network interface which you login
+# --------------------------------------------------------------------------------------
+function check_interface() {
+    if [ "$2" = "allinone" ]; then
+        MESSAGE="in all in one node, You have to login via management network."
+    elif [ "$2" = "controller" ]; then
+        MESSAGE="in controller node, You have to login via public network."
+    elif [ "$2" = "network" ]; then
+        MESSAGE="in compute node, You have to login via management network."
+    else
+        echo "\$2 should be 'allinone' or 'controller' or 'network'."
+        exit 1
+    fi
+
+    printf '\033[0;32m%s\033[0m\n' "Please check network interface which you login with."
+    printf '\033[0;32m%s\033[0m\n' "If you login to host via wrong interaface, you will lost network connectivity."
+    echo -e "\e[33m $MESSAGE \e[m"
+    echo -e -n "\e[33m Do you login to this IP address : $1 ? (y/n) \e[m"
+
+    read YN
+
+    if [ $YN = 'Y' ] || [ $YN = 'y' ]; then
+        echo "OK."
+    elif [ $YN = 'N' ] || [ $YN = 'n' ]; then
+        printf '\033[0;34m%s\033[0m\n' "I can not proceed this script. You will lost connectivity."
+        printf '\033[0;34m%s\033[0m\n' "Check network interface to login."
+        exit 1
+    else
+        printf '\033[0;34m%s\033[0m\n' "Please answer y/n"
+        exit 1
+    fi
+}
