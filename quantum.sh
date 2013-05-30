@@ -24,6 +24,11 @@ function allinone_quantum_setup() {
         exit 1
     fi
         
+    # see BUG https://lists.launchpad.net/openstack/msg23198.html
+    # this treat includes secirity problem, but unfortunatly it is needed for quantum now.
+    # when you noticed that it is not needed, please comment out these 2 lines.
+    cp $BASE_DIR/conf/etc.sudoers.d/quantum_sudoers /etc/sudoers.d/quantum_sudoers
+    chmod 440 /etc/sudoers.d/quantum_sudoers
 
     # restart processes
     restart_service quantum-server
@@ -81,7 +86,13 @@ function network_quantum_setup() {
         echo "NETWORK_TYPE must be 'vlan' or 'gre'."
         exit 1
     fi
-        
+
+    # see BUG https://lists.launchpad.net/openstack/msg23198.html
+    # this treat includes secirity problem, but unfortunatly it is needed for quantum now.
+    # when you noticed that it is not needed, please comment out these 2 lines.
+    cp $BASE_DIR/conf/etc.sudoers.d/quantum_sudoers /etc/sudoers.d/quantum_sudoers
+    chmod 440 /etc/sudoers.d/quantum_sudoers
+
     # restart processes
     cd /etc/init.d/; for i in $( ls quantum-* ); do sudo service $i restart; done
 }
