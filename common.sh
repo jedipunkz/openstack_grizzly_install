@@ -95,7 +95,12 @@ function keystone_setup() {
     mysql -uroot -p${MYSQL_PASS} -e "GRANT ALL ON keystone.* TO '${DB_KEYSTONE_USER}'@'%' IDENTIFIED BY '${DB_KEYSTONE_PASS}';"
 
     # set configuration file
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<DB_KEYSTONE_USER>#${DB_KEYSTONE_USER}#" -e "s#<DB_KEYSTONE_PASS>#${DB_KEYSTONE_PASS}#" $BASE_DIR/conf/etc.keystone/keystone.conf > /etc/keystone/keystone.conf
+    setconf infile:$BASE_DIR/conf/etc.keystone/keystone.conf \
+        outfile:/etc/keystone/keystone.conf \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<DB_KEYSTONE_USER>:${DB_KEYSTONE_USER}" \
+        "<DB_KEYSTONE_PASS>:${DB_KEYSTONE_PASS}"
+
     # restart keystone
     restart_service keystone
     # input keystone database to mysqld
@@ -188,10 +193,27 @@ function glance_setup() {
     mysql -uroot -p${MYSQL_PASS} -e "GRANT ALL ON glance.* TO '${DB_GLANCE_USER}'@'%' IDENTIFIED BY '${DB_GLANCE_PASS}';"
 
     # set configuration files
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_GLANCE_USER>#${DB_GLANCE_USER}#" -e "s#<DB_GLANCE_PASS>#${DB_GLANCE_PASS}#" $BASE_DIR/conf/etc.glance/glance-api.conf > /etc/glance/glance-api.conf
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_GLANCE_USER>#${DB_GLANCE_USER}#" -e "s#<DB_GLANCE_PASS>#${DB_GLANCE_PASS}#" $BASE_DIR/conf/etc.glance/glance-registry.conf > /etc/glance/glance-registry.conf
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.glance/glance-registry-paste.ini > /etc/glance/glance-registry-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.glance/glance-api-paste.ini > /etc/glance/glance-api-paste.ini
+    setconf infile:$BASE_DIR/conf/etc.glance/glance-api.conf \
+        outfile:/etc/glance/glance-api.conf \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" "<DB_IP>:${DB_IP}" \
+        "<DB_GLANCE_USER>:${DB_GLANCE_USER}" \
+        "<DB_GLANCE_PASS>:${DB_GLANCE_PASS}"
+    setconf infile:$BASE_DIR/conf/etc.glance/glance-registry.conf \
+        outfile:/etc/glance/glance-registry.conf \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" "<DB_IP>:${DB_IP}" \
+        "<DB_GLANCE_USER>:${DB_GLANCE_USER}" \
+        "<DB_GLANCE_PASS>:${DB_GLANCE_PASS}"
+    setconf infile:$BASE_DIR/conf/etc.glance/glance-registry-paste.ini \
+        outfile:/etc/glance/glance-registry-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.glance/glance-api-paste.ini \
+        outfile:/etc/glance/glance-api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+
     
     # restart process and syncing database
     restart_service glance-registry
@@ -236,8 +258,17 @@ function allinone_nova_setup() {
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
 
     # set configuration files
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<METADATA_LISTEN>#${CONTROLLER_NODE_IP}#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    setconf infile:$BASE_DIR/conf/etc.nova/api-paste.ini outfile:/etc/nova/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.nova/nova.conf outfile:/etc/nova/nova.conf \
+        "<METADATA_LISTEN>:${CONTROLLER_NODE_IP}" "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<VNC_IP>:${CONTROLLER_NODE_IP}" "<DB_IP>:${DB_IP}" "<DB_NOVA_USER>:${DB_NOVA_USER}" \
+        "<DB_NOVA_PASS>:${DB_NOVA_PASS}" "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" "<LOCAL_IP>:${CONTROLLER_NODE_IP}" \
+        "<CINDER_IP>:${CONTROLLER_NODE_IP}"
+
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
 
     # input nova database to mysqld
@@ -262,8 +293,17 @@ function controller_nova_setup() {
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
     
     # set configuration files for nova
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<METADATA_LISTEN>#${CONTROLLER_NODE_IP}#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${CONTROLLER_NODE_IP}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    setconf infile:$BASE_DIR/conf/etc.nova/api-paste.ini outfile:/etc/nova/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.nova/nova.conf outfile:/etc/nova/nova.conf \
+        "<METADATA_LISTEN>:${CONTROLLER_NODE_IP}" "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<VNC_IP>:${CONTROLLER_NODE_PUB_IP}" "<DB_IP>:${DB_IP}" "<DB_NOVA_USER>:${DB_NOVA_USER}" \
+        "<DB_NOVA_PASS>:${DB_NOVA_PASS}" "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" "<LOCAL_IP>:${CONTROLLER_NODE_IP}" \
+        "<CINDER_IP>:${CONTROLLER_NODE_IP}"
+        
 
     # input nova database to mysqld
     nova-manage db sync
@@ -311,15 +351,21 @@ function compute_nova_setup() {
 
     # set configuration files
     if [[ "${NETWORK_TYPE}" = 'gre' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${COMPUTE_NODE_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}" "<QUANTUM_IP>:${COMPUTE_NODE_IP}"
     elif [[ "${NETWORK_TYPE}" = 'vlan' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}"
     else
         echo "NETWORK_TYPE must be 'vlan' or 'gre'."
         exit 1
     fi
         
-    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
+    setconf infile:$BASE_DIR/conf/etc.quantum/quantum.conf \
+        outfile:/etc/quantum/quantum.conf \
+        "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}"
 
     # restart ovs agent
     service quantum-plugin-openvswitch-agent restart
@@ -331,8 +377,18 @@ function compute_nova_setup() {
     install_package nova-compute-kvm
 
     # set configuration files
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.nova/api-paste.ini > /etc/nova/api-paste.ini
-    sed -e "s#<METADATA_LISTEN>#127.0.0.1#" -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<VNC_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_NOVA_USER>#${DB_NOVA_USER}#" -e "s#<DB_NOVA_PASS>#${DB_NOVA_PASS}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" -e "s#<LOCAL_IP>#${COMPUTE_NODE_IP}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.nova/nova.conf > /etc/nova/nova.conf
+    setconf infile:$BASE_DIR/conf/etc.nova/api-paste.ini \
+        outfile:/etc/nova/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.nova/nova.conf \
+        outfile:/etc/nova/nova.conf \
+        "<METADATA_LISTEN>:127.0.0.1" "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<VNC_IP>:${CONTROLLER_NODE_PUB_IP}" "<DB_IP>:${DB_IP}" \
+        "<DB_NOVA_USER>:${DB_NOVA_USER}" "<DB_NOVA_PASS>:${DB_NOVA_PASS}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" \
+        "<LOCAL_IP>:${COMPUTE_NODE_IP}" "<CINDER_IP>:${CONTROLLER_NODE_IP}"
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
 
     # restart all of nova services
@@ -350,7 +406,7 @@ function cinder_setup() {
     install_package cinder-api cinder-scheduler cinder-volume iscsitarget open-iscsi iscsitarget-dkms
 
     # setup iscsi
-    sed -i 's/false/true/g' /etc/default/iscsitarget
+    setconf infile:/etc/default/iscsitarget "false:true"
     service iscsitarget start
     service open-iscsi start
     
@@ -360,14 +416,28 @@ function cinder_setup() {
     
     # set configuration files
     if [[ "$1" = "controller" ]]; then
-        sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.cinder/api-paste.ini > /etc/cinder/api-paste.ini
+        setconf infile:$BASE_DIR/conf/etc.cinder/api-paste.ini \
+            outfile:/etc/cinder/api-paste.ini \
+            "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+            "<CONTROLLER_PUB_IP>:${CONTROLLER_NODE_PUB_IP}" \
+            "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+            "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
     elif [[ "$1" = "allinone" ]]; then
-          sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_PUB_IP>#${CONTROLLER_NODE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.cinder/api-paste.ini > /etc/cinder/api-paste.ini
+        setconf infile:$BASE_DIR/conf/etc.cinder/api-paste.ini \
+            outfile:/etc/cinder/api-paste.ini \
+            "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+            "<CONTROLLER_PUB_IP>:${CONTROLLER_NODE_IP}" \
+            "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+            "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
     else
         echo "Warning: Mode must be 'allinone' or 'controller'."
         exit 1
     fi
-    sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<DB_CINDER_USER>#${DB_CINDER_USER}#" -e "s#<DB_CINDER_PASS>#${DB_CINDER_PASS}#" -e "s#<CINDER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.cinder/cinder.conf > /etc/cinder/cinder.conf
+    setconf infile:$BASE_DIR/conf/etc.cinder/cinder.conf \
+        outfile:/etc/cinder/cinder.conf \
+        "<DB_IP>:${DB_IP}" "<DB_CINDER_USER>:${DB_CINDER_USER}" \
+        "<DB_CINDER_PASS>:${DB_CINDER_PASS}" \
+        "<CINDER_IP>:${CONTROLLER_NODE_IP}"
 
     # input database for cinder
     cinder-manage db sync

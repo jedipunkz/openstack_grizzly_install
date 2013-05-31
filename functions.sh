@@ -131,3 +131,32 @@ function check_interface() {
         exit 1
     fi
 }
+
+# --------------------------------------------------------------------------------------
+# setup configuration file
+# --------------------------------------------------------------------------------------
+function setconf() {
+    local i=1
+    for element in "$@"
+    do
+        IFS=':', read -ra array <<< "$element"
+        if [[ "${array[0]}" = "infile" ]]; then
+            local input=${array[1]}
+            continue
+        elif [[ "${array[0]}" = "outfile" ]]; then
+            local output=${array[1]}
+            continue
+        fi
+        para[$i]="-e s#${array[0]}#${array[1]}#g "
+        para+=${para[$i]}
+        i=$(($i + 1))
+    done
+
+    if [[ "$output" ]]; then
+        cp $output ${output}.org
+        sed $para $input > $output
+    else
+        cp $input ${input}.org
+        sed -i $para $input
+    fi
+}

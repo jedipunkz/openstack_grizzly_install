@@ -12,13 +12,31 @@ function allinone_quantum_setup() {
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO '${DB_QUANTUM_USER}'@'%' IDENTIFIED BY '${DB_QUANTUM_PASS}';"
 
     # set configuration files
-    sed -e "s#<CONTROLLER_IP>#127.0.0.1#" -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/metadata_agent.ini > /etc/quantum/metadata_agent.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_NODE_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/l3_agent.ini > /etc/quantum/l3_agent.ini
+    setconf infile:$BASE_DIR/conf/etc.quantum/metadata_agent.ini \
+        outfile:/etc/quantum/metadata_agent.ini \
+        "<CONTROLLER_IP>:127.0.0.1" "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.quantum/api-paste.ini \
+        outfile:/etc/quantum/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.quantum/l3_agent.ini \
+        outfile:/etc/quantum/l3_agent.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<CONTROLLER_NODE_PUB_IP>:${CONTROLLER_NODE_PUB_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+
     if [[ "${NETWORK_TYPE}" = 'gre' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${QUANUTM_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}" "<QUANTUM_IP>:${QUANUTM_IP}"
     elif [[ "${NETWORK_TYPE}" = 'vlan' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}"
     else
         echo "NETWORK_TYPE must be 'vlan' or 'gre'."
         exit 1
@@ -49,16 +67,26 @@ function controller_quantum_setup() {
 
     # set configuration files
     if [[ "${NETWORK_TYPE}" = 'gre' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre.controller > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre.controller \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}"
     elif [[ "${NETWORK_TYPE}" = 'vlan' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}"
     else
         echo "NETWORK_TYPE must be 'vlan' or 'gre'."
         exit 1
     fi
     
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
-    sed -e "s#<CONTROLLER_IP>#localhost#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
+    setconf infile:$BASE_DIR/conf/etc.quantum/api-paste.ini \
+        outfile:/etc/quantum/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.quantum/quantum.conf \
+        outfile:/etc/quantum/quantum.conf \
+        "<CONTROLLER_IP>:localhost"
     
     # restart process
     restart_service quantum-server
@@ -73,15 +101,35 @@ function network_quantum_setup() {
     install_package quantum-plugin-openvswitch-agent quantum-dhcp-agent quantum-l3-agent quantum-metadata-agent quantum-lbaas-agent
 
     # set configuration files
-    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/metadata_agent.ini > /etc/quantum/metadata_agent.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/api-paste.ini > /etc/quantum/api-paste.ini
-    sed -e "s#<KEYSTONE_IP>#${KEYSTONE_IP}#" -e "s#<CONTROLLER_NODE_PUB_IP>#${CONTROLLER_NODE_PUB_IP}#" -e "s#<SERVICE_TENANT_NAME>#${SERVICE_TENANT_NAME}#" -e "s#<SERVICE_PASSWORD>#${SERVICE_PASSWORD}#" $BASE_DIR/conf/etc.quantum/l3_agent.ini > /etc/quantum/l3_agent.ini
-    sed -e "s#<CONTROLLER_IP>#${CONTROLLER_NODE_IP}#" $BASE_DIR/conf/etc.quantum/quantum.conf > /etc/quantum/quantum.conf
+    setconf infile:$BASE_DIR/conf/etc.quantum/metadata_agent.ini \
+        outfile:/etc/quantum/metadata_agent.ini \
+        "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}#"
+    setconf infile:$BASE_DIR/conf/etc.quantum/api-paste.ini \
+        outfile:/etc/quantum/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.quantum/l3_agent.ini \
+        outfile:/etc/quantum/l3_agent.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<CONTROLLER_NODE_PUB_IP>:${CONTROLLER_NODE_PUB_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.quantum/quantum.conf \
+        outfile:/etc/quantum/quantum.conf \
+        "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}"
     
     if [[ "${NETWORK_TYPE}" = 'gre' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" -e "s#<QUANTUM_IP>#${NETWORK_NODE_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.gre \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}" "<QUANTUM_IP>:${NETWORK_NODE_IP}"
     elif [[ "${NETWORK_TYPE}" = 'vlan' ]]; then
-        sed -e "s#<DB_IP>#${DB_IP}#" $BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan > /etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini
+        setconf infile:$BASE_DIR/conf/etc.quantum.plugins.openvswitch/ovs_quantum_plugin.ini.vlan \
+            outfile:/etc/quantum/plugins/openvswitch/ovs_quantum_plugin.ini \
+            "<DB_IP>:${DB_IP}"
     else
         echo "NETWORK_TYPE must be 'vlan' or 'gre'."
         exit 1
