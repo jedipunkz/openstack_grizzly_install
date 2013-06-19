@@ -282,7 +282,52 @@ function allinone_nova_setup() {
 }
 
 # --------------------------------------------------------------------------------------
-# install nova for controller node with quantum
+# install nova for all in one with quantum
+# --------------------------------------------------------------------------------------
+function allinone_nova_setup_nova_network() {
+    # install kvm and the others packages
+    install_package kvm libvirt-bin pm-utils
+    restart_service dbus
+    sleep 3
+    #virsh net-destroy default
+    virsh net-undefine default
+    restart_service libvirt-bin
+
+    # install nova packages
+    #install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor nova-compute-kvm
+    install_package nova-api nova-cert nova-common novnc nova-compute-kvm nova-consoleauth nova-scheduler nova-novncproxy vlan bridge-utils nova-network nova-console websockify nova-conductor
+    # create database for nova
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
+    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
+
+    # set configuration files
+    setconf infile:$BASE_DIR/conf/etc.nova/api-paste.ini outfile:/etc/nova/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.nova/nova.conf.nova-network outfile:/etc/nova/nova.conf \
+        "<METADATA_LISTEN>:${CONTROLLER_NODE_IP}" "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<VNC_IP>:${CONTROLLER_NODE_PUB_IP}" "<DB_IP>:${DB_IP}" "<DB_NOVA_USER>:${DB_NOVA_USER}" \
+        "<DB_NOVA_PASS>:${DB_NOVA_PASS}" "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" "<LOCAL_IP>:${CONTROLLER_NODE_IP}" \
+        "<CINDER_IP>:${CONTROLLER_NODE_IP}" "<FIXED_RANGE>:${FIXED_RANGE}" \
+        "<FIXED_START_ADDR>:${FIXED_START_ADDR}" "<NETWORK_SIZE>:${NETWORK_SIZE}" \
+        "<FLAT_INTERFACE>:${FLAT_INTERFACE}" "<COMPUTE_IP>:${CONTROLLER_NODE_IP}"
+
+    # cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
+
+    # input nova database to mysqld
+    nova-manage db sync
+
+    # restart all of nova services
+    cd /etc/init.d/; for i in $( ls nova-* ); do sudo service $i restart; done
+
+    # check nova service list
+    nova-manage service list
+}
+
+# --------------------------------------------------------------------------------------
+# install nova for controller node with nova-network
 # --------------------------------------------------------------------------------------
 function controller_nova_setup() {
     # install packages
@@ -313,6 +358,48 @@ function controller_nova_setup() {
     
     # check nova service list
     nova-manage service list
+}
+
+# --------------------------------------------------------------------------------------
+# 
+# --------------------------------------------------------------------------------------
+function controller_nova_setup_nova_network() {
+    # install packages
+    install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor
+
+    # create database for nova
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
+    mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
+    
+    # set configuration files for nova
+    setconf infile:$BASE_DIR/conf/etc.nova/api-paste.ini outfile:/etc/nova/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.nova/nova.conf.nova-network outfile:/etc/nova/nova.conf \
+        "<METADATA_LISTEN>:${CONTROLLER_NODE_IP}" "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<VNC_IP>:${CONTROLLER_NODE_PUB_IP}" "<DB_IP>:${DB_IP}" "<DB_NOVA_USER>:${DB_NOVA_USER}" \
+        "<DB_NOVA_PASS>:${DB_NOVA_PASS}" "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" "<LOCAL_IP>:${CONTROLLER_NODE_IP}" \
+        "<CINDER_IP>:${CONTROLLER_NODE_IP}" "<FIXED_RANGE>:${FIXED_RANGE}" \
+        "<FIXED_START_ADDR>:${FIXED_START_ADDR}" "<NETWORK_SIZE>:${NETWORK_SIZE}" \
+        "<FLAT_INTERFACE>:${FLAT_INTERFACE}" "<COMPUTE_IP>:${COMPUTE_NODE_IP}"
+
+    # input nova database to mysqld
+    nova-manage db sync
+    
+    # restart all of nova services
+    cd /etc/init.d/; for i in $( ls nova-* ); do sudo service $i restart; done
+    
+    # check nova service list
+    nova-manage service list
+}
+# --------------------------------------------------------------------------------------
+# create network with nova-network
+# --------------------------------------------------------------------------------------
+function create_network_nova_network() {
+    nova-manage network create private --fixed_range_v4=${FIXED_RANGE} --num_networks=1 --bridge=br100 --bridge_interface=${FLAT_INTERFACE} --network_size=${NETWORK_SIZE} --dns1=8.8.8.8 --dns2=8.8.4.4 --multi_host=T
+    nova-manage floating create --ip_range=${FLOATING_RANGE}
 }
 
 # --------------------------------------------------------------------------------------
@@ -390,6 +477,50 @@ function compute_nova_setup() {
         "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" \
         "<LOCAL_IP>:${COMPUTE_NODE_IP}" "<CINDER_IP>:${CONTROLLER_NODE_IP}"
     cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
+
+    # restart all of nova services
+    cd /etc/init.d/; for i in $( ls nova-* ); do sudo service $i restart; done
+
+    # check nova services
+    nova-manage service list
+}
+
+# --------------------------------------------------------------------------------------
+# install nova for compute node with nova-network
+# --------------------------------------------------------------------------------------
+function compute_nova_setup_nova_network() {
+    # install dependency packages
+    install_package vlan bridge-utils kvm libvirt-bin pm-utils sysfsutils
+    restart_service dbus
+    sleep 3
+    #virsh net-destroy default
+    virsh net-undefine default
+
+    # enable live migration
+    cp $BASE_DIR/conf/etc.libvirt/libvirtd.conf /etc/libvirt/libvirtd.conf
+    sed -i 's/^env\ libvirtd_opts=\"-d\"/env\ libvirtd_opts=\"-d\ -l\"/g' /etc/init/libvirt-bin.conf
+    sed -i 's/libvirtd_opts=\"-d\"/libvirtd_opts=\"-d\ -l\"/g' /etc/default/libvirt-bin
+    restart_service libvirt-bin
+
+    # instll nova package
+    install_package nova-compute-kvm nova-network nova-api-metadata
+
+    # set configuration files
+    setconf infile:$BASE_DIR/conf/etc.nova/api-paste.ini \
+        outfile:/etc/nova/api-paste.ini \
+        "<KEYSTONE_IP>:${KEYSTONE_IP}" \
+        "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}"
+    setconf infile:$BASE_DIR/conf/etc.nova/nova.conf.nova-network outfile:/etc/nova/nova.conf \
+        "<METADATA_LISTEN>:${COMPUTE_NODE_IP}" "<CONTROLLER_IP>:${CONTROLLER_NODE_IP}" \
+        "<VNC_IP>:${CONTROLLER_NODE_PUB_IP}" "<DB_IP>:${DB_IP}" "<DB_NOVA_USER>:${DB_NOVA_USER}" \
+        "<DB_NOVA_PASS>:${DB_NOVA_PASS}" "<SERVICE_TENANT_NAME>:${SERVICE_TENANT_NAME}" \
+        "<SERVICE_PASSWORD>:${SERVICE_PASSWORD}" "<LOCAL_IP>:${COMPUTE_NODE_IP}" \
+        "<CINDER_IP>:${CONTROLLER_NODE_IP}" "<FIXED_RANGE>:${FIXED_RANGE}" \
+        "<FIXED_START_ADDR>:${FIXED_START_ADDR}" "<NETWORK_SIZE>:${NETWORK_SIZE}" \
+        "<FLAT_INTERFACE>:${FLAT_INTERFACE}" "<COMPUTE_IP>:${COMPUTE_NODE_IP}"
+    
+    #cp $BASE_DIR/conf/etc.nova/nova-compute.conf /etc/nova/nova-compute.conf
 
     # restart all of nova services
     cd /etc/init.d/; for i in $( ls nova-* ); do sudo service $i restart; done
@@ -523,5 +654,5 @@ function openvswitch_setup() {
         ovs-vsctl add-port br-eth1 ${DATANETWORK_NIC_NETWORK_NODE}
     fi
     ovs-vsctl add-br br-ex
-    ovs-vsctl add-port br-ex ${PUBLICNETWORK_NIC}
+    ovs-vsctl add-port br-ex ${PUBLICNETWORK_NIC_NETWORK_NODE}
 }

@@ -18,7 +18,9 @@ This script was tested ..
 
 * all in one node with quantum
 * separated nodes (controller node, network node, compute x n) with quantum
-* GRE Tunnel
+* all in one node with nova-network
+* separated nodes (controller node, compute x n) with nova-network
+* GRE Tunnel, VLAN
 
 so, now I do not support separated nodes for each service (keystone, glance,
 nova, etc...). If you want to do this with separated nodes mode, please tell
@@ -66,7 +68,7 @@ network segment or you can separate these networks. This README's
 configuration of the premise is sharing a segment with API and Public network
 (default NIC : eth0).
 
-How to use on All in One Node
+How to use on All in One Node with quantum
 ----
 
 #### Architecture
@@ -84,11 +86,6 @@ How to use on All in One Node
           +------------- Data Network
 
 * all of compornetns are on same node.
-
-#### OS installation
-
-Please make a partition such as /dev/sda6 for cinder volumes, if you do not
-have a additional disk device. and install openssh-server only.
 
 #### Setup network interfaces
 
@@ -128,7 +125,8 @@ git clone this script from github.
 
     % git clone git://github.com/jedipunkz/openstack_grizzly_install.git
     % cd openstack_grizzly_install
-
+    % cp setup.conf.samples/setup.conf.allinone.quantum setup.conf
+    
 #### Edit parameters on setup.conf
 
 There are many paramaters on setup.conf, but in 'allinone' mode, parameters
@@ -136,7 +134,8 @@ which you need to edit is such things.
 
     HOST_IP='10.200.10.10'
     HOST_PUB_IP='10.200.9.10'
-    PUBLICNETWORK_NIC='eth0'
+    PUBLICNETWORK_NIC_NETWORK_NODE='eth0'
+    NETWORK_COMPONENT='quantum'
 
 If you want to change other parameters such as DB password, admin password,
 please change these.
@@ -150,7 +149,81 @@ Run this script, all of conpornents will be built.
 That's all and You've done. :D Now you can access to Horizon
 (http://${HOST_IP}/horizon/) with user 'demo', password 'demo'.
 
-How to use on separated nodes mode
+How to use on All in One Node with nova-network
+----
+
+#### Architecture
+
+    +------------------- Public Network
+    |
+    +------------+
+    |vm|vm|...   |
+    +------------+
+    | all in one |
+    +------------+
+    |    
+    +------------------- Management/API Network
+
+
+* all of compornetns are on same node.
+
+#### Setup network interfaces
+
+Please setup network interfaces just like this.
+
+    % sudo ${EDITOR} /etc/network/interfaces
+    auto lo
+    iface lo inet loopback
+    
+    # this NIC will be used for VM traffic to the internet
+    auto eth0
+    iface eth0 inet static
+        address 10.200.9.10
+        netmask 255.255.255.0
+        gateway 10.200.9.1
+        dns-nameservers 8.8.8.8 8.8.4.4
+        dns-search example.com
+
+    # this NIC must be on management network
+    auto eth1
+    iface eth1 inet static
+        address 10.200.10.10
+        netmask 255.255.255.0
+        dns-nameservers 8.8.8.8 8.8.4.4
+
+#### Get this script
+
+git clone this script from github.
+
+    % git clone git://github.com/jedipunkz/openstack_grizzly_install.git
+    % cd openstack_grizzly_install
+    % cp setup.conf.samples/setup.conf.allinone.nova-network setup.conf
+
+#### Edit parameters on setup.conf
+
+There are many paramaters on setup.conf, but in 'allinone' mode, parameters
+which you need to edit is such things.
+
+    HOST_IP='10.200.10.10'
+    HOST_PUB_IP='10.200.9.10'
+    FLAT_INTERFACE='eth0'
+    NETWORK_COMPONENT='nova-network'
+
+If you want to change other parameters such as DB password, admin password,
+please change these.
+
+#### Run script
+
+Run this script, all of conpornents will be built.
+
+    % sudo ./setup.sh allinone
+
+That's all and You've done. :D Now you can access to Horizon
+(http://${HOST_IP}/horizon/) with user 'demo', password 'demo'.
+
+
+
+How to use on separated nodes mode with quatum
 ----
 
 #### Architecture
@@ -173,19 +246,14 @@ How to use on separated nodes mode
 * additional network node(s) make you be able to have duplication of each agent
 * additional compute node(s) make you be able to have more VMs.
 
-#### OS installation
-
-Please make a partition such as /dev/sda6 for cinder volumes, if you do not
-have a additional disk device. and install openssh-server only. and you should
-3 nodes or more. (controller, network, compute) nodes.
-
 #### Get this script
 
 git clone this script from github on controller node.
 
     controller% git clone git://github.com/jedipunkz/openstack_grizzly_install.git
     controller% cd openstack_grizzly_install
-
+    controller% cp setup.conf.samples/setup.conf.separated.quantum setup.conf
+    
 #### Edit parameters on setup.conf
 
 There are many paramaters on setup.conf, but in 'allinone' mode, parameters
@@ -196,9 +264,10 @@ which you need to edit is such things.
     NETWORK_NODE_IP='10.200.10.11'
     COMPUTE_NODE_IP='10.200.10.12'
     DATANETWORK_NIC_NETWORK_NODE='eth1'
-    DATANETWORK_NIC_COMPUTE_NODE='eth1'
-    PUBLICNETWORK_NIC='eth0'
-
+    DATANETWORK_NIC_COMPUTE_NODE='eth0'
+    PUBLICNETWORK_NIC_NETWORK_NODE='eth0'
+    NETWORK_COMPONENT='quantum'
+    
 If you want to change other parameters such as DB password, admin password,
 please change these.
 
@@ -344,6 +413,135 @@ Edit setup.conf (NETWORK_NODE_IP parameter) and execute setup.sh.
     add_network% sudo ./setup.sh network
     add_network% source ~/openstackrc
     add_network% quantum agent-list # check agent list
+    
+How to use on separated nodes mode with nova-network
+----
+
+#### Architecture
+
+    +-------------+-------------+------------------------------ Public/API Network
+    |             |             |             
+    +-----------+ +-----------+ +-----------+
+    |           | |vm|vm|..   | |vm|vm|..   |
+    | controller| +-----------+ +-----------+
+    |           | |  compute  | |  compute  |
+    |           | |           | | additional|
+    +-----------+ +-----------+ +-----------+
+    |             |             |
+    +-------------+-------------+------------------------------ Management Network
+
+
+* minimum architecture : 2 nodes (controller node x 1, compute node x1)
+* additional compute node(s) make you be able to have more VMs.
+
+#### Get this script
+
+git clone this script from github on controller node.
+
+    controller% git clone git://github.com/jedipunkz/openstack_grizzly_install.git
+    controller% cd openstack_grizzly_install
+    controller% cp setup.conf.samples/setup.conf.separated.nova-network setup.conf
+
+#### Edit parameters on setup.conf
+
+There are many paramaters on setup.conf, but in 'allinone' mode, parameters
+which you need to edit is such things.
+
+    CONTROLLER_NODE_IP='10.200.10.10'
+    CONTROLLER_NODE_PUB_IP='10.200.9.10'
+    COMPUTE_NODE_IP='10.200.10.11'
+    FLAT_INTERFACE='eth0'
+    NETWORK_COMPONENT='nova-network'
+
+If you want to change other parameters such as DB password, admin password,
+please change these.
+
+#### copy to other nodes
+
+copy directory to network node and compute node.
+
+    controller% scp -r openstack_grizzly_install <network_node_ip>:~/
+    controller% scp -r openstack_grizzly_install <compute_node_ip>:~/
+
+#### Controller Node's network interfaces
+
+Set up NICs for controller node.
+
+    controller% sudo ${EDITOR} /etc/network/interfaces
+    # The loopback network interface
+    auto lo
+    iface lo inet loopback
+    
+    # for API network
+    auto eth0
+    iface eth0 inet static
+        address 10.200.9.10
+        netmask 255.255.255.0
+        gateway 10.200.9.1
+        dns-nameservers 8.8.8.8 8.8.4.4
+        dns-search example.com
+
+    # for management network
+    auto eth1
+    iface eth1 inet static
+        address 10.200.10.10
+        netmask 255.255.255.0
+        dns-nameservers 8.8.8.8 8.8.4.4
+        dns-search example.com
+
+#### Compute Node's network interfaces
+
+Set up NICs for network node.
+
+    compute% sudo ${EDITOR} /etc/network/interfaces
+    # The loopback network interface
+    auto lo
+    iface lo inet loopback
+    
+    # for API network
+    auto eth0
+    iface eth0 inet static
+        address 10.200.9.11
+        netmask 255.255.255.0
+        gateway 10.200.9.1
+        dns-nameservers 8.8.8.8 8.8.4.4
+        dns-search example.com
+
+    # for management network
+    auto eth1
+    iface eth1 inet static
+        address 10.200.10.11
+        netmask 255.255.255.0
+        dns-nameservers 8.8.8.8 8.8.4.4
+        dns-search example.com
+        
+and login to compute node via eth2 (mangement network) for executing this
+script. Other NIC will lost connectivity.
+
+#### Run script
+
+Run this script, all of conpornents will be built.
+
+    controller% sudo ./setup.sh controller
+    compute   % sudo ./setup.sh comupte
+
+That's all and You've done. :D Now you can access to Horizon
+(http://${CONTROLLER_NODE_PUB_IP}/horizon/) with user 'demo', password 'demo'.
+
+#### Additional Compute Node
+
+If you want to have additional compute node(s), please setup network
+interfaces as noted before for compute node and execute these commands.
+
+Edit setup.conf (COPUTE_NODE_IP parameter) and execute setup.sh.
+
+    compute    % scp -r ~/openstack_grizzly_install <add_compute_node>:~/
+    add_compute% cd openstack_grizzly_install
+    add_compute% ${EDITOR} setup.conf
+    COMPUTE_NODE_IP='<your additional compute node's ip>'
+    add_compute% sudo ./setup.sh compute
+    add_compute% sudo nova-manage service list # check nodes list
+
 
 Parameters
 ----
@@ -406,6 +604,7 @@ This work has been based on: mseknibilel's guide.
 Version and Change log
 ----
 
+* 2013/06/19 : version 0.6 : supported nova-network
 * 2013/05/27 : version 0.5 : supported vlan mode
 * 2013/05/24 : version 0.4 : enabled to use loopback device for cinder.
 * 2013/05/13 : version 0.3 : enabled nova live-migration

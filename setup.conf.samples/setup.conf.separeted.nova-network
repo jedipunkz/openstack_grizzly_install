@@ -13,9 +13,9 @@ BASE_DIR=`pwd`
 # ---------------------------------------------------------------
 # 1. if you run on one node (all in one), enable these paramters
 # ---------------------------------------------------------------
-HOST_IP='10.200.10.10'
-HOST_PUB_IP='10.200.9.10'
-PUBLICNETWORK_NIC_NETWORK_NODE='eth0'
+#HOST_IP='10.200.10.10'
+#HOST_PUB_IP='10.200.9.10'
+#PUBLICNETWORK_NIC_NETWORK_NODE='eth0'
 # ---------------------------------------------------------------
 # 2. if you run on 3 separated nodes (controller, network, compute),
 #   enable these paramters
@@ -37,10 +37,10 @@ PUBLICNETWORK_NIC_NETWORK_NODE='eth0'
 # 4. if you run on 2 or more  separated nodes (controller, compute)
 #   with nova-network, enable these paramters
 # ---------------------------------------------------------------
-#CONTROLLER_NODE_IP='10.200.10.10'
-#CONTROLLER_NODE_PUB_IP='10.200.9.10'
-#COMPUTE_NODE_IP='10.200.10.11'
-#FLAT_INTERFACE='eth0'
+CONTROLLER_NODE_IP='10.200.10.10'
+CONTROLLER_NODE_PUB_IP='10.200.9.10'
+COMPUTE_NODE_IP='10.200.10.11'
+FLAT_INTERFACE='eth0'
 # ---------------------------------------------------------------
 
 # ---------------------------------------------------------------
