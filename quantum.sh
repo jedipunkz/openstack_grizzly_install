@@ -158,7 +158,7 @@ function create_network() {
         TENANT_ID=$(keystone tenant-list | grep " service " | get_field 1)
         INT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} int_net | grep ' id ' | get_field 2)
         # create internal sub network
-        INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
+        INT_SUBNET_ID=$(quantum subnet-create --tenant-id ${TENANT_ID} --name int_subnet --ip_version 4 --gateway ${INT_NET_GATEWAY} ${INT_NET_ID} ${INT_NET_RANGE} | grep ' id ' | get_field 2)
         quantum subnet-update ${INT_SUBNET_ID} list=true --dns_nameservers 8.8.8.8 8.8.4.4
         # create internal router
         INT_ROUTER_ID=$(quantum router-create --tenant-id ${TENANT_ID} router-demo | grep ' id ' | get_field 2)
@@ -174,7 +174,7 @@ function create_network() {
         # create external network
         EXT_NET_ID=$(quantum net-create --tenant-id ${TENANT_ID} ext_net -- --router:external=True | grep ' id ' | get_field 2)
         # create external sub network
-        quantum subnet-create --tenant-id ${TENANT_ID} --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
+        quantum subnet-create --tenant-id ${TENANT_ID} --name ext_subnet --gateway=${EXT_NET_GATEWAY} --allocation-pool start=${EXT_NET_START},end=${EXT_NET_END} ${EXT_NET_ID} ${EXT_NET_RANGE} -- --enable_dhcp=False
         # set external network to demo router
         quantum router-gateway-set ${INT_ROUTER_ID} ${EXT_NET_ID}
     else
