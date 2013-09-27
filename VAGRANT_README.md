@@ -4,10 +4,9 @@ VM, please follow the instructions as bellow:
 
 1. checkout the repository
 
-        % git clone
-git://github.com/mingjin/openstack_grizzly_install.git
+        % git clone git://github.com/mingjin/openstack_grizzly_install.git
         % cd openstack_grizzly_install
-% cp setup.conf.samples/setup.conf.allinone.quantum setup.conf
+        % cp setup.conf.samples/setup.conf.allinone.quantum setup.conf
         
 2. Edit the following parameters in setup.conf:
 
