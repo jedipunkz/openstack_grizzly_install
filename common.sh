@@ -91,7 +91,7 @@ function keystone_setup() {
     install_package keystone python-keystone python-keystoneclient
 
     # create database for keystone
-    mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE keystone;"
+    mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS keystone;"
     mysql -uroot -p${MYSQL_PASS} -e "GRANT ALL ON keystone.* TO '${DB_KEYSTONE_USER}'@'%' IDENTIFIED BY '${DB_KEYSTONE_PASS}';"
 
     # set configuration file
@@ -189,7 +189,7 @@ function glance_setup() {
     install_package glance
     
     # create database for keystone service
-    mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE glance;"
+    mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS glance;"
     mysql -uroot -p${MYSQL_PASS} -e "GRANT ALL ON glance.* TO '${DB_GLANCE_USER}'@'%' IDENTIFIED BY '${DB_GLANCE_PASS}';"
 
     # set configuration files
@@ -254,7 +254,7 @@ function allinone_nova_setup() {
     # install nova packages
     install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor nova-compute-kvm
     # create database for nova
-    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS nova;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
 
     # set configuration files
@@ -297,7 +297,7 @@ function allinone_nova_setup_nova_network() {
     #install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor nova-compute-kvm
     install_package nova-api nova-cert nova-common novnc nova-compute-kvm nova-consoleauth nova-scheduler nova-novncproxy vlan bridge-utils nova-network nova-console websockify nova-conductor
     # create database for nova
-    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS nova;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
 
     # set configuration files
@@ -334,7 +334,7 @@ function controller_nova_setup() {
     install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor
 
     # create database for nova
-    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS IF NOT EXISTS nova;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
     
     # set configuration files for nova
@@ -368,7 +368,7 @@ function controller_nova_setup_nova_network() {
     install_package nova-api nova-cert novnc nova-consoleauth nova-scheduler nova-novncproxy nova-doc nova-conductor
 
     # create database for nova
-    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE nova;"
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS IF NOT EXISTS nova;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON nova.* TO '${DB_NOVA_USER}'@'%' IDENTIFIED BY '${DB_NOVA_PASS}';"
     
     # set configuration files for nova
@@ -542,7 +542,7 @@ function cinder_setup() {
     service open-iscsi start
     
     # create database for cinder
-    mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE cinder;"
+    mysql -uroot -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS cinder;"
     mysql -uroot -p${MYSQL_PASS} -e "GRANT ALL ON cinder.* TO '${DB_CINDER_USER}'@'%' IDENTIFIED BY '${DB_CINDER_PASS}';"
     
     # set configuration files
