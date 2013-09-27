@@ -15,7 +15,7 @@ function clear_databases() {
 function clear_bridges() {
   for i in br-int br-eth1 br-ex 
   do
-    sudo ovs-vsctl $i 
+    sudo ovs-vsctl del-br $i 
   done  
 }
 
