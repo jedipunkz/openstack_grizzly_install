@@ -3,6 +3,7 @@ source ./setup.conf
 function clear() {
   clear_databases
   clear_bridges
+  clear_cinder_volume
 }
 
 function clear_databases() {
@@ -17,6 +18,12 @@ function clear_bridges() {
   do
     sudo ovs-vsctl del-br $i 
   done  
+}
+
+function clear_cinder_volume() {
+  sudo vgremove cinder-volumes
+  sudo pvremove -ff $CINDER_VOLUME
+  sudo losetup -d $CINDER_VOLUME
 }
 
 case "$1" in
