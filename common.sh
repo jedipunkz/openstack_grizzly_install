@@ -233,6 +233,7 @@ function os_add () {
     fi
     
     # download cirros os image
+    install_package wget
     wget --no-check-certificate ${OS_IMAGE_URL} -O ./os.img
     
     # add os image to glance
