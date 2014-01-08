@@ -8,7 +8,7 @@ function allinone_quantum_setup() {
     install_package quantum-server quantum-plugin-openvswitch quantum-plugin-openvswitch-agent dnsmasq quantum-dhcp-agent quantum-l3-agent quantum-lbaas-agent
 
     # create database for quantum
-    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE quantum;"
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS quantum;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO '${DB_QUANTUM_USER}'@'%' IDENTIFIED BY '${DB_QUANTUM_PASS}';"
 
     # set configuration files
@@ -62,7 +62,7 @@ function controller_quantum_setup() {
     # install packages
     install_package quantum-server quantum-plugin-openvswitch
     # create database for quantum
-    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE quantum;"
+    mysql -u root -p${MYSQL_PASS} -e "CREATE DATABASE IF NOT EXISTS quantum;"
     mysql -u root -p${MYSQL_PASS} -e "GRANT ALL ON quantum.* TO '${DB_QUANTUM_USER}'@'%' IDENTIFIED BY '${DB_QUANTUM_PASS}';"
 
     # set configuration files

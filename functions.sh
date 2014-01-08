@@ -32,7 +32,7 @@ function get_field() {
 # package installation function
 # --------------------------------------------------------------------------------------
 function install_package() {
-    apt-get -y install "$@"
+    apt-get -y --fix-missing install "$@"
 }
 
 # --------------------------------------------------------------------------------------
